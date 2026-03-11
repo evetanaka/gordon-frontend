@@ -1,0 +1,20 @@
+[
+  {"inputs":[{"name":"assets","type":"uint256"}],"name":"deposit","outputs":[{"name":"shares","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[{"name":"shares","type":"uint256"}],"name":"withdraw","outputs":[{"name":"assets","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[{"name":"","type":"address"}],"name":"shareBalanceOf","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"totalShares","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"totalAssets","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"sharePrice","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"name":"user","type":"address"}],"name":"userPosition","outputs":[{"name":"shares","type":"uint256"},{"name":"value","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"freeAssets","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"name","outputs":[{"name":"","type":"string"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"slug","outputs":[{"name":"","type":"string"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"name":"","type":"uint256"}],"name":"depositFeeBps","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"name":"","type":"uint256"}],"name":"withdrawFeeBps","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"bridgedAmount","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"positionsValue","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"highWaterMark","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"asset","outputs":[{"name":"","type":"address"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"name":"assets","type":"uint256"}],"name":"convertToShares","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"name":"shares","type":"uint256"}],"name":"convertToAssets","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"}
+]

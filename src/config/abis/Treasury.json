@@ -1,0 +1,9 @@
+[
+  {"inputs":[],"name":"stats","outputs":[{"name":"_totalCollected","type":"uint256"},{"name":"_totalBurned","type":"uint256"},{"name":"_totalDistributed","type":"uint256"},{"name":"_totalBuybacks","type":"uint256"},{"name":"_pendingUsdc","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"pendingFees","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"buybackRatioBps","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"rewardRatioBps","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"totalGdnBurned","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"totalGdnDistributed","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"totalBuybacks","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"}
+]

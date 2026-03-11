@@ -1,0 +1,14 @@
+[
+  {"inputs":[{"name":"amount","type":"uint256"},{"name":"lockMonths","type":"uint256"}],"name":"stake","outputs":[],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[],"name":"unstake","outputs":[],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[],"name":"claimRewards","outputs":[],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[{"name":"user","type":"address"}],"name":"loyaltyTier","outputs":[{"name":"","type":"uint8"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"name":"","type":"address"}],"name":"totalDeposited","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"name":"","type":"address"}],"name":"stakes","outputs":[{"name":"amount","type":"uint256"},{"name":"effectiveAmount","type":"uint256"},{"name":"lockStart","type":"uint64"},{"name":"lockEnd","type":"uint64"},{"name":"boostBps","type":"uint16"},{"name":"rewardDebt","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"totalEffectiveStaked","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"accRewardPerShare","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"name":"user","type":"address"}],"name":"isStaking","outputs":[{"name":"","type":"bool"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"name":"user","type":"address"}],"name":"timeUntilUnlock","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"name":"user","type":"address"}],"name":"pendingRewards","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"name":"user","type":"address"}],"name":"getStake","outputs":[{"components":[{"name":"amount","type":"uint256"},{"name":"effectiveAmount","type":"uint256"},{"name":"lockStart","type":"uint64"},{"name":"lockEnd","type":"uint64"},{"name":"boostBps","type":"uint16"},{"name":"rewardDebt","type":"uint256"}],"name":"","type":"tuple"}],"stateMutability":"view","type":"function"}
+]

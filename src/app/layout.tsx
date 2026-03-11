@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import Web3Provider from '@/providers/Web3Provider'
 
 export const metadata: Metadata = {
   title: 'Gordon.fi — Tracking Alpha. Printing Gains.',
@@ -24,7 +25,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-[#0A0A0A]">{children}</body>
+      <body className="bg-[#0A0A0A]">
+        <Web3Provider>{children}</Web3Provider>
+      </body>
     </html>
   )
 }

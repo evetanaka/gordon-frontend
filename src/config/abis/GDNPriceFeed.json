@@ -1,0 +1,5 @@
+[
+  {"inputs":[],"name":"latestPrice","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"price","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"updatedAt","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"}
+]
