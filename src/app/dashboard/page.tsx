@@ -370,7 +370,7 @@ export default function Dashboard() {
       </nav>
 
       {/* MOBILE BOTTOM NAV */}
-      <div className="md:hidden fixed bottom-0 left-0 w-full bg-[#0A0A0A] border-t border-[#333] z-50 flex justify-around items-center h-16">
+      <div className="md:hidden fixed bottom-0 left-0 w-full bg-[#0A0A0A] border-t border-[#333] z-50 flex justify-around items-center h-16 pb-safe">
         <a href="/dashboard" className="flex flex-col items-center gap-1 text-white">
           <LayoutDashboard className="w-5 h-5" />
           <span className="font-mono text-[10px] tracking-widest uppercase">Dash</span>
@@ -390,7 +390,7 @@ export default function Dashboard() {
       </div>
 
       {/* MAIN CONTENT */}
-      <main className="max-w-7xl mx-auto px-4 md:px-6 pt-24 pb-12">
+      <main className="max-w-5xl mx-auto px-4 md:px-6 pt-24 pb-12 md:pb-24">
         {isConnected ? (
           <>
             {/* SECTION 1: PORTFOLIO OVERVIEW */}

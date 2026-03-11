@@ -461,7 +461,7 @@ export default function VaultsPage() {
       </div>
 
       {/* --- MAIN CONTENT --- */}
-      <main className="max-w-4xl mx-auto px-4 md:px-6 pt-28 pb-12 md:pb-24">
+      <main className="max-w-5xl mx-auto px-4 md:px-6 pt-24 pb-12 md:pb-24">
         {/* SECTION 1: PROTOCOL STATS BANNER */}
         <div className="w-full bg-[#111] border border-[#333] mb-8 md:mb-12 flex flex-col md:flex-row justify-center items-center py-4 px-6 md:gap-16 gap-4">
           <div className="text-[#6B6B6B] font-mono text-[10px] uppercase tracking-widest hidden md:block">

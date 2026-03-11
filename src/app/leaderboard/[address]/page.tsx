@@ -349,7 +349,7 @@ export default function WalletProfilePage({ params }: { params: { address: strin
       </div>
 
       {/* MAIN */}
-      <main className="max-w-4xl mx-auto px-4 md:px-6 pt-24 pb-12 md:pb-24">
+      <main className="max-w-5xl mx-auto px-4 md:px-6 pt-24 pb-12 md:pb-24">
 
         {/* BACK */}
         <a href="/leaderboard" className="inline-flex items-center gap-2 text-[#6B6B6B] hover:text-[#00FF66] font-mono text-xs uppercase tracking-widest mb-8 transition-colors">

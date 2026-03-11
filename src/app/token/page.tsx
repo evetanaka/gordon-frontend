@@ -229,6 +229,7 @@ const FlywheelNode = ({ icon, label, delay }: { icon: React.ReactNode; label: st
 export default function TokenPage() {
   const [isConnected, setIsConnected] = useState(true);
   const [walletOpen, setWalletOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: '' });
   const [chartPeriod, setChartPeriod] = useState('ALL');
@@ -239,6 +240,7 @@ export default function TokenPage() {
 
   useOnClickOutside(walletRef, () => setWalletOpen(false));
   useOnClickOutside(menuRef, () => setMobileMenuOpen(false));
+  useEffect(() => { const h = () => setScrolled(window.scrollY > 20); window.addEventListener("scroll", h); return () => window.removeEventListener("scroll", h); }, []);
 
   const showToast = (msg: string) => {
     setToast({ visible: true, message: msg });
@@ -268,12 +270,12 @@ export default function TokenPage() {
       <Toast message={toast.message} visible={toast.visible} />
 
       {/* NAVBAR */}
-      <nav className="sticky top-0 z-50 bg-[#0A0A0A]/95 backdrop-blur-sm border-b border-[#222]">
-        <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
-          <a href="/" className="font-mono font-bold text-lg text-white tracking-tight">GORDON<span className="text-[#00FF66]">.fi</span></a>
-          <div className="hidden md:flex items-center gap-6">
+      <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-[#0A0A0A]/90 backdrop-blur-md border-b border-[#333]' : 'bg-transparent border-b border-transparent'}`}>
+        <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
+          <a href="/" className="font-mono font-bold text-xl tracking-tighter text-white">GORDON<span className="text-[#00FF66]">.fi</span></a>
+          <div className="hidden md:flex items-center gap-8">
             {navLinks.map(l => (
-              <a key={l.href} href={l.href} className={`font-mono text-sm transition-colors ${l.href === '/token' ? 'text-[#00FF66]' : 'text-[#6B6B6B] hover:text-white'}`}>{l.label}</a>
+              <a key={l.href} href={l.href} className={`font-mono text-xs uppercase tracking-widest transition-colors ${l.href === '/token' ? 'text-[#00FF66]' : 'text-[#6B6B6B] hover:text-white'}`}>{l.label}</a>
             ))}
           </div>
           <div className="flex items-center gap-3">
@@ -293,24 +295,14 @@ export default function TokenPage() {
                 )}
               </div>
             ) : (
-              <button onClick={() => setIsConnected(true)} className="bg-[#00FF66] text-black font-mono text-xs font-bold px-4 py-1.5 hover:bg-[#00DD55] transition-colors">Connect Wallet</button>
+              <button onClick={() => setIsConnected(true)} className="bg-[#00FF66] text-black font-mono font-bold text-xs px-4 py-2 uppercase tracking-wider hover:bg-white transition-colors">Connect</button>
             )}
-            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden text-[#6B6B6B]">
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <div className="space-y-1"><div className="w-5 h-0.5 bg-current" /><div className="w-5 h-0.5 bg-current" /><div className="w-5 h-0.5 bg-current" /></div>}
-            </button>
           </div>
         </div>
-        {mobileMenuOpen && (
-          <div ref={menuRef} className="md:hidden bg-[#0A0A0A] border-t border-[#222] px-4 py-4 space-y-3">
-            {navLinks.map(l => (
-              <a key={l.href} href={l.href} className={`block font-mono text-sm ${l.href === '/token' ? 'text-[#00FF66]' : 'text-[#6B6B6B]'}`}>{l.label}</a>
-            ))}
-          </div>
-        )}
       </nav>
 
       {/* CONTENT */}
-      <main className="max-w-6xl mx-auto px-4 py-8 md:py-12 pb-24 md:pb-12">
+      <main className="max-w-5xl mx-auto px-4 md:px-6 pt-24 pb-12 md:pb-24">
 
         {/* 1. HEADER */}
         <SectionHeader title="$GDN TOKEN" subtitle="The deflationary engine behind Gordon.fi" />
@@ -497,16 +489,12 @@ export default function TokenPage() {
       </main>
 
       {/* MOBILE BOTTOM NAV */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#0A0A0A] border-t border-[#222] z-50">
-        <div className="flex justify-around py-2">
-          {bottomNavItems.map(item => (
-            <a key={item.href} href={item.href} className={`flex flex-col items-center gap-0.5 px-3 py-1 ${item.href === '/token' ? 'text-[#00FF66]' : 'text-[#6B6B6B]'}`}>
-              {item.icon}
-              <span className="font-mono text-[9px] uppercase">{item.label}</span>
-            </a>
-          ))}
-        </div>
-      </nav>
+      <div className="md:hidden fixed bottom-0 left-0 w-full bg-[#0A0A0A] border-t border-[#333] z-50 flex justify-around items-center h-16 pb-safe">
+        <a href="/dashboard" className="flex flex-col items-center gap-1 text-[#6B6B6B]"><LayoutDashboard className="w-5 h-5" /><span className="font-mono text-[10px] tracking-widest uppercase">Dash</span></a>
+        <a href="/vaults" className="flex flex-col items-center gap-1 text-[#6B6B6B]"><Layers className="w-5 h-5" /><span className="font-mono text-[10px] tracking-widest uppercase">Vaults</span></a>
+        <a href="/stake" className="flex flex-col items-center gap-1 text-[#6B6B6B]"><Zap className="w-5 h-5" /><span className="font-mono text-[10px] tracking-widest uppercase">Stake</span></a>
+        <a href="/token" className="flex flex-col items-center gap-1 text-[#00FF66]"><Coins className="w-5 h-5" /><span className="font-mono text-[10px] tracking-widest uppercase">$GDN</span></a>
+      </div>
 
       {/* Keyframe for burn log animation */}
       <style jsx global>{`
