@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import Link from 'next/link';
 import {
   ChevronDown, ExternalLink, Copy, Power, Activity, ArrowUpRight, ArrowLeft, ArrowRight,
   LayoutDashboard, Layers, Trophy, Coins, Check, Star, Zap
@@ -284,7 +285,7 @@ export default function WalletProfilePage({ params }: { params: { address: strin
       <div className="min-h-screen bg-[#0A0A0A] text-white flex items-center justify-center">
         <div className="text-center">
           <div className="font-mono text-[#6B6B6B] text-xs uppercase tracking-widest mb-4">&gt; WALLET NOT FOUND</div>
-          <a href="/leaderboard" className="text-[#00FF66] font-mono text-sm hover:underline">← Back to Leaderboard</a>
+          <Link href="/leaderboard" className="text-[#00FF66] font-mono text-sm hover:underline">← Back to Leaderboard</Link>
         </div>
       </div>
     );
@@ -308,7 +309,7 @@ export default function WalletProfilePage({ params }: { params: { address: strin
       {/* NAVBAR */}
       <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-[#0A0A0A]/90 backdrop-blur-md border-b border-[#333]' : 'bg-transparent border-b border-transparent'}`}>
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
-          <a href="/" className="font-mono font-bold text-xl tracking-tighter text-white">GORDON<span className="text-[#00FF66]">.fi</span></a>
+          <Link href="/" className="font-mono font-bold text-xl tracking-tighter text-white">GORDON<span className="text-[#00FF66]">.fi</span></Link>
           <div className="hidden md:flex items-center gap-8">
             {[{ l: 'Dashboard', h: '/dashboard' }, { l: 'Vaults', h: '/vaults' }, { l: 'Leaderboard', h: '/leaderboard' }, { l: 'Stake', h: '/stake' }, { l: '$GDN', h: '/token' }].map(link => (
               <a key={link.l} href={link.h} className={`font-mono text-xs uppercase tracking-widest relative group transition-colors ${link.l === 'Leaderboard' ? 'text-white' : 'text-[#6B6B6B] hover:text-[#00FF66]'}`}>
@@ -342,19 +343,19 @@ export default function WalletProfilePage({ params }: { params: { address: strin
 
       {/* MOBILE NAV */}
       <div className="md:hidden fixed bottom-0 left-0 w-full bg-[#0A0A0A] border-t border-[#333] z-50 flex justify-around items-center h-16 pb-safe">
-        <a href="/dashboard" className="flex flex-col items-center gap-1 text-[#6B6B6B]"><LayoutDashboard className="w-5 h-5" /><span className="font-mono text-[10px] tracking-widest uppercase">Dash</span></a>
-        <a href="/vaults" className="flex flex-col items-center gap-1 text-[#6B6B6B]"><Layers className="w-5 h-5" /><span className="font-mono text-[10px] tracking-widest uppercase">Vaults</span></a>
-        <a href="/stake" className="flex flex-col items-center gap-1 text-[#6B6B6B]"><Zap className="w-5 h-5" /><span className="font-mono text-[10px] tracking-widest uppercase">Stake</span></a>
-        <a href="/token" className="flex flex-col items-center gap-1 text-[#6B6B6B]"><Coins className="w-5 h-5" /><span className="font-mono text-[10px] tracking-widest uppercase">$GDN</span></a>
+        <Link href="/dashboard" className="flex flex-col items-center gap-1 text-[#6B6B6B]"><LayoutDashboard className="w-5 h-5" /><span className="font-mono text-[10px] tracking-widest uppercase">Dash</span></Link>
+        <Link href="/vaults" className="flex flex-col items-center gap-1 text-[#6B6B6B]"><Layers className="w-5 h-5" /><span className="font-mono text-[10px] tracking-widest uppercase">Vaults</span></Link>
+        <Link href="/stake" className="flex flex-col items-center gap-1 text-[#6B6B6B]"><Zap className="w-5 h-5" /><span className="font-mono text-[10px] tracking-widest uppercase">Stake</span></Link>
+        <Link href="/token" className="flex flex-col items-center gap-1 text-[#6B6B6B]"><Coins className="w-5 h-5" /><span className="font-mono text-[10px] tracking-widest uppercase">$GDN</span></Link>
       </div>
 
       {/* MAIN */}
       <main className="max-w-5xl mx-auto px-4 md:px-6 pt-24 pb-12 md:pb-24">
 
         {/* BACK */}
-        <a href="/leaderboard" className="inline-flex items-center gap-2 text-[#6B6B6B] hover:text-[#00FF66] font-mono text-xs uppercase tracking-widest mb-8 transition-colors">
+        <Link href="/leaderboard" className="inline-flex items-center gap-2 text-[#6B6B6B] hover:text-[#00FF66] font-mono text-xs uppercase tracking-widest mb-8 transition-colors">
           <ArrowLeft className="w-3 h-3" /> Back to Leaderboard
-        </a>
+        </Link>
 
         {/* WALLET HEADER */}
         <div className="flex flex-col md:flex-row gap-4 md:items-center mb-8">

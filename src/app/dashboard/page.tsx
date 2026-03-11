@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { ChevronDown, ExternalLink, Copy, Power, Activity, ArrowRight, Check, Flame, ArrowUpRight, LayoutDashboard, Layers, Trophy, Coins, Wallet, Zap } from 'lucide-react';
 
 // --- CUSTOM HOOKS ---
@@ -315,9 +316,9 @@ export default function Dashboard() {
       {/* TOP NAVBAR */}
       <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-[#0A0A0A]/90 backdrop-blur-md border-b border-[#333]' : 'bg-transparent border-b border-transparent'}`}>
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
-          <a href="/" className="font-mono font-bold text-xl tracking-tighter text-white cursor-pointer">
+          <Link href="/" className="font-mono font-bold text-xl tracking-tighter text-white cursor-pointer">
             GORDON<span className="text-[#00FF66]">.fi</span>
-          </a>
+          </Link>
           <div className="hidden md:flex items-center gap-8">
             {[
               { label: 'Dashboard', href: '/dashboard' },
@@ -371,22 +372,22 @@ export default function Dashboard() {
 
       {/* MOBILE BOTTOM NAV */}
       <div className="md:hidden fixed bottom-0 left-0 w-full bg-[#0A0A0A] border-t border-[#333] z-50 flex justify-around items-center h-16 pb-safe">
-        <a href="/dashboard" className="flex flex-col items-center gap-1 text-white">
+        <Link href="/dashboard" className="flex flex-col items-center gap-1 text-white">
           <LayoutDashboard className="w-5 h-5" />
           <span className="font-mono text-[10px] tracking-widest uppercase">Dash</span>
-        </a>
-        <a href="/vaults" className="flex flex-col items-center gap-1 text-[#6B6B6B]">
+        </Link>
+        <Link href="/vaults" className="flex flex-col items-center gap-1 text-[#6B6B6B]">
           <Layers className="w-5 h-5" />
           <span className="font-mono text-[10px] tracking-widest uppercase">Vaults</span>
-        </a>
-        <a href="/stake" className="flex flex-col items-center gap-1 text-[#6B6B6B]">
+        </Link>
+        <Link href="/stake" className="flex flex-col items-center gap-1 text-[#6B6B6B]">
           <Zap className="w-5 h-5" />
           <span className="font-mono text-[10px] tracking-widest uppercase">Stake</span>
-        </a>
-        <a href="/token" className="flex flex-col items-center gap-1 text-[#6B6B6B]">
+        </Link>
+        <Link href="/token" className="flex flex-col items-center gap-1 text-[#6B6B6B]">
           <Coins className="w-5 h-5" />
           <span className="font-mono text-[10px] tracking-widest uppercase">$GDN</span>
-        </a>
+        </Link>
       </div>
 
       {/* MAIN CONTENT */}

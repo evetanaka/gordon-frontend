@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import Link from 'next/link';
 import {
   ChevronDown, ExternalLink, Copy, Power, Check, X,
   LayoutDashboard, Layers, Trophy, Coins, Lock, Zap,
@@ -229,7 +230,7 @@ export default function StakePage() {
       {/* NAVBAR */}
       <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-[#0A0A0A]/90 backdrop-blur-md border-b border-[#333]' : 'bg-transparent border-b border-transparent'}`}>
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
-          <a href="/" className="font-mono font-bold text-xl tracking-tighter text-white">GORDON<span className="text-[#00FF66]">.fi</span></a>
+          <Link href="/" className="font-mono font-bold text-xl tracking-tighter text-white">GORDON<span className="text-[#00FF66]">.fi</span></Link>
           <div className="hidden md:flex items-center gap-8">
             {navLinks.map(l => (
               <a key={l.href} href={l.href} className={`font-mono text-xs uppercase tracking-widest transition-colors ${l.href === '/stake' ? 'text-[#00FF66]' : 'text-[#6B6B6B] hover:text-white'}`}>{l.label}</a>
@@ -635,9 +636,9 @@ export default function StakePage() {
                 <div className="font-mono text-xs text-[#6B6B6B]">Buy $GDN on Uniswap or check the token page for price, burns, and flywheel details.</div>
               </div>
               <div className="flex gap-3">
-                <a href="/token" className="bg-transparent border border-[#333] text-white font-mono text-xs font-bold px-5 py-2.5 hover:border-[#00FF66] transition-colors flex items-center gap-2">
+                <Link href="/token" className="bg-transparent border border-[#333] text-white font-mono text-xs font-bold px-5 py-2.5 hover:border-[#00FF66] transition-colors flex items-center gap-2">
                   $GDN Token <ArrowRight className="w-3 h-3" />
-                </a>
+                </Link>
                 <a href="https://app.uniswap.org" target="_blank" rel="noreferrer" className="bg-[#00FF66] text-black font-mono text-xs font-bold px-5 py-2.5 hover:bg-[#00DD55] transition-colors flex items-center gap-2">
                   Buy on Uniswap <ExternalLink className="w-3 h-3" />
                 </a>
@@ -650,10 +651,10 @@ export default function StakePage() {
 
       {/* MOBILE BOTTOM NAV */}
       <div className="md:hidden fixed bottom-0 left-0 w-full bg-[#0A0A0A] border-t border-[#333] z-50 flex justify-around items-center h-16 pb-safe">
-        <a href="/dashboard" className="flex flex-col items-center gap-1 text-[#6B6B6B]"><LayoutDashboard className="w-5 h-5" /><span className="font-mono text-[10px] tracking-widest uppercase">Dash</span></a>
-        <a href="/vaults" className="flex flex-col items-center gap-1 text-[#6B6B6B]"><Layers className="w-5 h-5" /><span className="font-mono text-[10px] tracking-widest uppercase">Vaults</span></a>
-        <a href="/stake" className="flex flex-col items-center gap-1 text-[#00FF66]"><Zap className="w-5 h-5" /><span className="font-mono text-[10px] tracking-widest uppercase">Stake</span></a>
-        <a href="/token" className="flex flex-col items-center gap-1 text-[#6B6B6B]"><Coins className="w-5 h-5" /><span className="font-mono text-[10px] tracking-widest uppercase">$GDN</span></a>
+        <Link href="/dashboard" className="flex flex-col items-center gap-1 text-[#6B6B6B]"><LayoutDashboard className="w-5 h-5" /><span className="font-mono text-[10px] tracking-widest uppercase">Dash</span></Link>
+        <Link href="/vaults" className="flex flex-col items-center gap-1 text-[#6B6B6B]"><Layers className="w-5 h-5" /><span className="font-mono text-[10px] tracking-widest uppercase">Vaults</span></Link>
+        <Link href="/stake" className="flex flex-col items-center gap-1 text-[#00FF66]"><Zap className="w-5 h-5" /><span className="font-mono text-[10px] tracking-widest uppercase">Stake</span></Link>
+        <Link href="/token" className="flex flex-col items-center gap-1 text-[#6B6B6B]"><Coins className="w-5 h-5" /><span className="font-mono text-[10px] tracking-widest uppercase">$GDN</span></Link>
       </div>
 
       <style jsx global>{`

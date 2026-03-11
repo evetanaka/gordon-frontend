@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import Link from 'next/link';
 import { ArrowRight, ExternalLink, Activity, ChevronRight, Menu, X, Check } from 'lucide-react';
 
 // --- CUSTOM HOOKS ---
@@ -410,10 +411,10 @@ export default function Home() {
           )}
           <div className="flex items-center gap-4">
             {!isMobile ? (
-              <a href="/dashboard" className="bg-[#00FF66] text-black font-mono font-bold text-sm px-6 py-3 uppercase tracking-wider hover:bg-white transition-colors group flex items-center gap-2">
+              <Link href="/dashboard" className="bg-[#00FF66] text-black font-mono font-bold text-sm px-6 py-3 uppercase tracking-wider hover:bg-white transition-colors group flex items-center gap-2">
                 Launch App
                 <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-              </a>
+              </Link>
             ) : (
               <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-[#00FF66]">
                 {mobileMenuOpen ? <X /> : <Menu />}
@@ -431,7 +432,7 @@ export default function Home() {
             ].map(link => (
               <a key={link.label} href={link.href} className="text-[#6B6B6B] py-2 border-b border-[#222]">{link.label}</a>
             ))}
-            <a href="/dashboard" className="bg-[#00FF66] text-black font-bold py-3 mt-4 w-full block text-center">LAUNCH APP -{'>'}</a>
+            <Link href="/dashboard" className="bg-[#00FF66] text-black font-bold py-3 mt-4 w-full block text-center">LAUNCH APP -{'>'}</Link>
           </div>
         )}
       </nav>
@@ -453,9 +454,9 @@ export default function Home() {
               Gordon tracks the most profitable Polymarket wallets and auto-copies their trades via decentralized vaults.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <a href="/vaults" className="bg-[#00FF66] text-black font-mono font-bold px-8 py-4 uppercase tracking-wider hover:bg-white transition-colors text-center">
+              <Link href="/vaults" className="bg-[#00FF66] text-black font-mono font-bold px-8 py-4 uppercase tracking-wider hover:bg-white transition-colors text-center">
                 Deposit Now
-              </a>
+              </Link>
               <button className="border border-[#333] text-white font-mono font-bold px-8 py-4 uppercase tracking-wider hover:border-[#00FF66] hover:text-[#00FF66] transition-colors flex justify-center items-center gap-2">
                 Read Docs
                 <ExternalLink className="w-4 h-4" />
@@ -582,9 +583,9 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
-                <a href="/vaults/alpha" className="w-full border border-black text-black font-mono font-bold py-4 uppercase tracking-wider hover:bg-[#00FF66] hover:border-[#00FF66] transition-colors block text-center">
+                <Link href="/vaults/alpha" className="w-full border border-black text-black font-mono font-bold py-4 uppercase tracking-wider hover:bg-[#00FF66] hover:border-[#00FF66] transition-colors block text-center">
                   Deposit USDC
-                </a>
+                </Link>
               </div>
             </TiltCard>
 
@@ -622,9 +623,9 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
-                <a href="/vaults/degen" className="w-full bg-[#00FF66] text-black font-mono font-bold py-4 uppercase tracking-wider hover:bg-white transition-colors block text-center">
+                <Link href="/vaults/degen" className="w-full bg-[#00FF66] text-black font-mono font-bold py-4 uppercase tracking-wider hover:bg-white transition-colors block text-center">
                   Deposit USDC
-                </a>
+                </Link>
               </div>
             </TiltCard>
           </div>
@@ -688,9 +689,9 @@ export default function Home() {
           <h2 className="text-5xl md:text-7xl font-bold mb-8">
             STOP TRADING.<br/>START TRACKING.
           </h2>
-          <a href="/dashboard" className="inline-block bg-black text-[#00FF66] font-mono font-bold text-lg px-10 py-5 uppercase tracking-wider hover:bg-white hover:text-black transition-colors shadow-[8px_8px_0px_#0A0A0A] hover:shadow-[4px_4px_0px_#0A0A0A] hover:translate-x-1 hover:translate-y-1">
+          <Link href="/dashboard" className="inline-block bg-black text-[#00FF66] font-mono font-bold text-lg px-10 py-5 uppercase tracking-wider hover:bg-white hover:text-black transition-colors shadow-[8px_8px_0px_#0A0A0A] hover:shadow-[4px_4px_0px_#0A0A0A] hover:translate-x-1 hover:translate-y-1">
             Launch App
-          </a>
+          </Link>
         </div>
       </section>
 
