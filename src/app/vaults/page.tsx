@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   ChevronDown, ExternalLink, Copy, Power, Activity, ArrowUpRight, ArrowRight,
-  LayoutDashboard, Layers, Trophy, Coins, Check, Lock, Clock, TrendingUp, Zap,
+  LayoutDashboard, Layers, Trophy, Coins, Check, Lock, Clock, TrendingUp,
   Shield, Zap, AlertTriangle, X
 } from 'lucide-react';
 
