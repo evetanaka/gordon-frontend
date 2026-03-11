@@ -120,6 +120,22 @@ const bottomNavItems = [
   { label: '$GDN', icon: <Coins className="w-5 h-5" />, href: '/token' },
 ];
 
+// --- HOW IT WORKS CARD ---
+
+const HowItWorksCard = ({ delay, step, title, desc, icon }: { delay: number; step: string; title: string; desc: string; icon: React.ReactNode }) => {
+  const [ref, isVisible] = useScrollReveal({ delay });
+  return (
+    <div ref={ref} className={`bg-[#111] border border-[#222] p-6 transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+      <div className="flex items-center gap-3 mb-4">
+        <div className="font-mono text-[10px] text-[#00FF66] uppercase tracking-widest">{step}</div>
+        <div className="text-[#00FF66]">{icon}</div>
+      </div>
+      <h3 className="font-mono text-sm text-white font-bold mb-2">{title}</h3>
+      <p className="font-mono text-xs text-[#6B6B6B] leading-relaxed">{desc}</p>
+    </div>
+  );
+};
+
 // --- MAIN PAGE ---
 
 export default function StakePage() {
@@ -612,23 +628,9 @@ export default function StakePage() {
               <div className="h-[2px] w-16 bg-[#00FF66] mt-2 mb-6" />
 
               <div className="grid md:grid-cols-3 gap-4">
-                {[
-                  { step: '01', title: 'Stake $GDN', desc: 'Deposit $GDN tokens into the staking contract. No lockup — withdraw anytime.', icon: <Zap className="w-6 h-6" /> },
-                  { step: '02', title: 'Climb Ranks', desc: 'Your rank is based on staked GDN value relative to your total vault deposits. Higher ratio = higher rank.', icon: <TrendingUp className="w-6 h-6" /> },
-                  { step: '03', title: 'Enjoy Perks', desc: 'Reduced fees on deposits & withdrawals, early vault access, governance voting, airdrop multipliers, and more.', icon: <Gift className="w-6 h-6" /> },
-                ].map((item, i) => {
-                  const [ref, isVisible] = useScrollReveal({ delay: i * 150 });
-                  return (
-                    <div key={i} ref={ref} className={`bg-[#111] border border-[#222] p-6 transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="font-mono text-[10px] text-[#00FF66] uppercase tracking-widest">{item.step}</div>
-                        <div className="text-[#00FF66]">{item.icon}</div>
-                      </div>
-                      <h3 className="font-mono text-sm text-white font-bold mb-2">{item.title}</h3>
-                      <p className="font-mono text-xs text-[#6B6B6B] leading-relaxed">{item.desc}</p>
-                    </div>
-                  );
-                })}
+                <HowItWorksCard delay={0} step="01" title="Stake $GDN" desc="Deposit $GDN tokens into the staking contract. No lockup — withdraw anytime." icon={<Zap className="w-6 h-6" />} />
+                <HowItWorksCard delay={150} step="02" title="Climb Ranks" desc="Your rank is based on staked GDN value relative to your total vault deposits. Higher ratio = higher rank." icon={<TrendingUp className="w-6 h-6" />} />
+                <HowItWorksCard delay={300} step="03" title="Enjoy Perks" desc="Reduced fees on deposits & withdrawals, early vault access, governance voting, airdrop multipliers, and more." icon={<Gift className="w-6 h-6" />} />
               </div>
             </div>
 
