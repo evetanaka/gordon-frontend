@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronDown, ExternalLink, Copy, Power, Activity, ArrowRight, Check, Flame, ArrowUpRight, LayoutDashboard, Layers, Trophy, Coins, Wallet } from 'lucide-react';
+import { ChevronDown, ExternalLink, Copy, Power, Activity, ArrowRight, Check, Flame, ArrowUpRight, LayoutDashboard, Layers, Trophy, Coins, Wallet, Zap } from 'lucide-react';
 
 // --- CUSTOM HOOKS ---
 
@@ -323,6 +323,7 @@ export default function Dashboard() {
               { label: 'Dashboard', href: '/dashboard' },
               { label: 'Vaults', href: '/vaults' },
               { label: 'Leaderboard', href: '/leaderboard' },
+              { label: 'Stake', href: '/stake' },
               { label: '$GDN', href: '/token' },
             ].map(link => (
               <a key={link.label} href={link.href} className={`font-mono text-xs uppercase tracking-widest relative group transition-colors ${link.label === 'Dashboard' ? 'text-white' : 'text-[#6B6B6B] hover:text-[#00FF66]'}`}>
@@ -378,9 +379,9 @@ export default function Dashboard() {
           <Layers className="w-5 h-5" />
           <span className="font-mono text-[10px] tracking-widest uppercase">Vaults</span>
         </a>
-        <a href="/leaderboard" className="flex flex-col items-center gap-1 text-[#6B6B6B]">
-          <Trophy className="w-5 h-5" />
-          <span className="font-mono text-[10px] tracking-widest uppercase">Ranks</span>
+        <a href="/stake" className="flex flex-col items-center gap-1 text-[#6B6B6B]">
+          <Zap className="w-5 h-5" />
+          <span className="font-mono text-[10px] tracking-widest uppercase">Stake</span>
         </a>
         <a href="/token" className="flex flex-col items-center gap-1 text-[#6B6B6B]">
           <Coins className="w-5 h-5" />

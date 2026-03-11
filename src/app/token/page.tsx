@@ -2,12 +2,10 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  ChevronDown, ExternalLink, Copy, Power, Activity, ArrowRight,
-  LayoutDashboard, Layers, Trophy, Coins, Check, TrendingUp,
-  Flame, AlertTriangle, X, ArrowUpRight, Zap, Shield, Star,
-  Lock, Users, Vote, Gift, Crown, ChevronUp
+  ChevronDown, ExternalLink, Copy, Power, ArrowRight,
+  LayoutDashboard, Layers, Coins, Check, TrendingUp,
+  Flame, X, ArrowUpRight, Zap, Users
 } from 'lucide-react';
-import { calculateLoyaltyRank } from '@/components/DepositModal';
 
 // --- CUSTOM HOOKS ---
 
@@ -132,34 +130,6 @@ const BURN_LOG: { timestamp: string; display: string; amount: number; usd: numbe
   { timestamp: '2026-03-07T08:42:05Z', display: '2026-03-07 08:42:05', amount: 1340, usd: 1128.28, source: 'Degen Vault perf fee', tx: '0x92ab...c0de' },
 ];
 
-const RANK_TIERS = [
-  { rank: 'none', label: 'Unranked', emoji: '—', feeDeposit: 1.0, feeWithdraw: 0.50, minRatio: 0, minDeposit: 0 },
-  { rank: 'bronze', label: 'Bronze', emoji: '🥉', feeDeposit: 0.75, feeWithdraw: 0.375, minRatio: 0.01, minDeposit: 0 },
-  { rank: 'silver', label: 'Silver', emoji: '🥈', feeDeposit: 0.50, feeWithdraw: 0.25, minRatio: 0.05, minDeposit: 0 },
-  { rank: 'gold', label: 'Gold', emoji: '🥇', feeDeposit: 0.25, feeWithdraw: 0.125, minRatio: 0.10, minDeposit: 0 },
-  { rank: 'platinum', label: 'Platinum', emoji: '💎', feeDeposit: 0.10, feeWithdraw: 0.05, minRatio: 0.10, minDeposit: 500000 },
-];
-
-const PERKS_LIST = [
-  { key: 'depositFee', label: 'Deposit fee' },
-  { key: 'withdrawFee', label: 'Withdrawal fee' },
-  { key: 'prioritySupport', label: 'Priority support' },
-  { key: 'earlyAccess', label: 'Early vault access' },
-  { key: 'governance', label: 'Governance voting' },
-  { key: 'airdrop', label: 'Airdrop multiplier' },
-  { key: 'privateChannel', label: 'Private channel' },
-];
-
-const RANK_PERKS: Record<string, Record<string, string | boolean>> = {
-  none: { depositFee: '1.00%', withdrawFee: '0.50%', prioritySupport: false, earlyAccess: false, governance: false, airdrop: '1×', privateChannel: false },
-  bronze: { depositFee: '0.75% (25% off)', withdrawFee: '0.375% (25% off)', prioritySupport: false, earlyAccess: false, governance: false, airdrop: '1.5×', privateChannel: false },
-  silver: { depositFee: '0.50% (50% off)', withdrawFee: '0.25% (50% off)', prioritySupport: true, earlyAccess: false, governance: false, airdrop: '2×', privateChannel: false },
-  gold: { depositFee: '0.25% (75% off)', withdrawFee: '0.125% (75% off)', prioritySupport: true, earlyAccess: true, governance: true, airdrop: '3×', privateChannel: false },
-  platinum: { depositFee: '0.10% (90% off)', withdrawFee: '0.05% (90% off)', prioritySupport: true, earlyAccess: true, governance: true, airdrop: '5×', privateChannel: true },
-};
-
-// --- COMPONENTS ---
-
 // Metric card
 const MetricCard = ({ label, value, sub, index }: { label: string; value: string; sub: string; index: number }) => {
   const [ref, isVisible] = useScrollReveal({ delay: index * 100 });
@@ -266,13 +236,6 @@ export default function TokenPage() {
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Staking state
-  const [stakedAmount, setStakedAmount] = useState(772);
-  const [walletBalance, setWalletBalance] = useState(1200);
-  const totalDeposited = 12400;
-  const [stakeInput, setStakeInput] = useState('');
-  const [unstakeInput, setUnstakeInput] = useState('');
-  const [stakingStep, setStakingStep] = useState<'idle' | 'approving' | 'staking' | 'unstaking' | 'done'>('idle');
-  const [mobileStakeTab, setMobileStakeTab] = useState<'stake' | 'unstake'>('stake');
 
   useOnClickOutside(walletRef, () => setWalletOpen(false));
   useOnClickOutside(menuRef, () => setMobileMenuOpen(false));
@@ -284,65 +247,19 @@ export default function TokenPage() {
 
   const copyToClipboard = (text: string) => { navigator.clipboard.writeText(text); showToast('Copied to clipboard'); };
 
-  const currentRank = calculateLoyaltyRank(stakedAmount, totalDeposited);
-
-  // Preview rank for stake/unstake
-  const stakePreviewRank = stakeInput ? calculateLoyaltyRank(stakedAmount + parseFloat(stakeInput || '0'), totalDeposited) : null;
-  const unstakePreviewRank = unstakeInput ? calculateLoyaltyRank(Math.max(0, stakedAmount - parseFloat(unstakeInput || '0')), totalDeposited) : null;
-  const unstakeWarning = unstakePreviewRank && unstakePreviewRank.rank !== currentRank.rank;
-
-  // Rank index for current highlight
-  const currentRankIdx = RANK_TIERS.findIndex(r => r.rank === currentRank.rank);
-
-  // Stake action
-  const handleStake = async () => {
-    const amt = parseFloat(stakeInput);
-    if (!amt || amt <= 0 || amt > walletBalance) return;
-    setStakingStep('approving');
-    await new Promise(r => setTimeout(r, 2000));
-    setStakingStep('staking');
-    await new Promise(r => setTimeout(r, 2000));
-    setStakedAmount(prev => prev + amt);
-    setWalletBalance(prev => prev - amt);
-    setStakeInput('');
-    setStakingStep('done');
-    showToast(`Staked ${amt.toFixed(0)} GDN successfully`);
-    setTimeout(() => setStakingStep('idle'), 500);
-  };
-
-  const handleUnstake = async () => {
-    const amt = parseFloat(unstakeInput);
-    if (!amt || amt <= 0 || amt > stakedAmount) return;
-    setStakingStep('unstaking');
-    await new Promise(r => setTimeout(r, 2000));
-    setStakedAmount(prev => prev - amt);
-    setWalletBalance(prev => prev + amt);
-    setUnstakeInput('');
-    setStakingStep('done');
-    showToast(`Unstaked ${amt.toFixed(0)} GDN successfully`);
-    setTimeout(() => setStakingStep('idle'), 500);
-  };
-
-  const setStakePercent = (pct: number) => setStakeInput((walletBalance * pct).toFixed(0));
-  const setUnstakePercent = (pct: number) => setUnstakeInput((stakedAmount * pct).toFixed(0));
-
-  // Progress to next rank
-  const nextRankTier = currentRankIdx < 4 ? RANK_TIERS[currentRankIdx + 1] : null;
-  const currentRatio = totalDeposited > 0 ? (stakedAmount * GDN_PRICE) / totalDeposited : 0;
-  const progressPct = nextRankTier ? Math.min(100, (currentRatio / nextRankTier.minRatio) * 100) : 100;
-  const gdnNeeded = nextRankTier ? Math.max(0, Math.ceil(((nextRankTier.minRatio * totalDeposited) - (stakedAmount * GDN_PRICE)) / GDN_PRICE)) : 0;
 
   const navLinks = [
     { label: 'Dashboard', href: '/dashboard' },
     { label: 'Vaults', href: '/vaults' },
     { label: 'Leaderboard', href: '/leaderboard' },
+    { label: 'Stake', href: '/stake' },
     { label: '$GDN', href: '/token' },
   ];
 
   const bottomNavItems = [
     { label: 'Home', icon: <LayoutDashboard className="w-5 h-5" />, href: '/dashboard' },
     { label: 'Vaults', icon: <Layers className="w-5 h-5" />, href: '/vaults' },
-    { label: 'Lead', icon: <Trophy className="w-5 h-5" />, href: '/leaderboard' },
+    { label: 'Stake', icon: <Zap className="w-5 h-5" />, href: '/stake' },
     { label: '$GDN', icon: <Coins className="w-5 h-5" />, href: '/token' },
   ];
 
@@ -524,196 +441,22 @@ export default function TokenPage() {
           </div>
         </div>
 
-        {/* 6. STAKE $GDN */}
+        {/* 6. STAKE CTA */}
         <div className="mb-12">
-          <SectionHeader title="STAKE $GDN" subtitle="Stake $GDN to unlock Loyalty Ranks and reduce platform fees." />
-
-          {!isConnected ? (
-            <div className="bg-[#111] border border-[#222] p-8 text-center">
-              <div className="font-mono text-[#6B6B6B] mb-4">Connect your wallet to stake $GDN</div>
-              <button onClick={() => setIsConnected(true)} className="bg-[#00FF66] text-black font-mono text-sm font-bold px-6 py-2 hover:bg-[#00DD55] transition-colors">Connect Wallet</button>
+          <div className="bg-[#111] border border-[#222] p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-[#00FF66]/10 border border-[#00FF66]/20 flex items-center justify-center">
+                <Zap className="w-6 h-6 text-[#00FF66]" />
+              </div>
+              <div>
+                <h3 className="font-mono text-lg text-white mb-1">Stake $GDN · Reduce Fees</h3>
+                <p className="font-mono text-xs text-[#6B6B6B]">Stake to climb Loyalty Ranks (up to 90% fee reduction), unlock governance, early vault access & more.</p>
+              </div>
             </div>
-          ) : (
-            <>
-              {/* 6a. Staking Position */}
-              <div className="bg-[#111] border border-[#222] p-6 mb-4">
-                <div className="font-mono text-[10px] uppercase tracking-widest text-[#6B6B6B] mb-4">YOUR STAKING POSITION</div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                  <div>
-                    <div className="font-mono text-[10px] uppercase tracking-widest text-[#6B6B6B] mb-1">STAKED</div>
-                    <div className="font-mono text-xl text-white">{stakedAmount.toLocaleString()} GDN</div>
-                  </div>
-                  <div>
-                    <div className="font-mono text-[10px] uppercase tracking-widest text-[#6B6B6B] mb-1">VALUE</div>
-                    <div className="font-mono text-xl text-white">${(stakedAmount * GDN_PRICE).toFixed(2)}</div>
-                  </div>
-                  <div>
-                    <div className="font-mono text-[10px] uppercase tracking-widest text-[#6B6B6B] mb-1">RANK</div>
-                    <div className="font-mono text-xl text-white">{currentRank.emoji} {currentRank.label}</div>
-                  </div>
-                  <div>
-                    <div className="font-mono text-[10px] uppercase tracking-widest text-[#6B6B6B] mb-1">RATIO</div>
-                    <div className="font-mono text-xl text-white">{(currentRatio * 100).toFixed(2)}%</div>
-                  </div>
-                </div>
-
-                {/* Progress bar */}
-                {nextRankTier ? (
-                  <div>
-                    <div className="flex items-center justify-between mb-2 font-mono text-xs">
-                      <span className="text-[#6B6B6B]">Progress to {RANK_TIERS[currentRankIdx + 1].emoji} {RANK_TIERS[currentRankIdx + 1].label}</span>
-                      <span className="text-white">{(nextRankTier.minRatio * 100).toFixed(0)}% ratio needed</span>
-                    </div>
-                    <div className="h-2 bg-[#222] w-full">
-                      <div className="h-full bg-[#00FF66] transition-all duration-600 ease-out" style={{ width: `${progressPct}%` }} />
-                    </div>
-                    <div className="font-mono text-xs text-[#6B6B6B] mt-2">
-                      Need <span className="text-white">{gdnNeeded.toLocaleString()} more GDN</span> (~${(gdnNeeded * GDN_PRICE).toFixed(0)}) to reach {RANK_TIERS[currentRankIdx + 1].label}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="font-mono text-sm text-[#00FF66] flex items-center gap-2">
-                    <Crown className="w-4 h-4" /> You&apos;ve reached the highest rank ✨
-                  </div>
-                )}
-              </div>
-
-              {/* 6b. Stake / Unstake */}
-              {/* Mobile tabs */}
-              <div className="flex md:hidden mb-0">
-                <button onClick={() => setMobileStakeTab('stake')} className={`flex-1 py-2 font-mono text-xs uppercase tracking-wider text-center border ${mobileStakeTab === 'stake' ? 'bg-[#00FF66] text-black border-[#00FF66]' : 'bg-[#111] text-[#6B6B6B] border-[#222]'}`}>Stake</button>
-                <button onClick={() => setMobileStakeTab('unstake')} className={`flex-1 py-2 font-mono text-xs uppercase tracking-wider text-center border ${mobileStakeTab === 'unstake' ? 'bg-[#111] text-white border-[#333]' : 'bg-[#111] text-[#6B6B6B] border-[#222]'}`}>Unstake</button>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-4 mb-4">
-                {/* Stake panel */}
-                <div className={`bg-[#111] border border-[#222] p-6 ${mobileStakeTab !== 'stake' ? 'hidden md:block' : ''}`}>
-                  <div className="font-mono text-sm text-white mb-4 flex items-center gap-2"><Zap className="w-4 h-4 text-[#00FF66]" /> STAKE $GDN</div>
-                  <div className="mb-2 flex justify-between font-mono text-xs text-[#6B6B6B]">
-                    <span>Amount</span>
-                    <span>Balance: {walletBalance.toLocaleString()} GDN</span>
-                  </div>
-                  <input type="number" value={stakeInput} onChange={e => setStakeInput(e.target.value)} placeholder="0" className="w-full bg-[#0A0A0A] border border-[#333] px-4 py-3 font-mono text-white text-lg focus:border-[#00FF66] focus:outline-none mb-2" />
-                  <div className="flex gap-2 mb-4">
-                    {[0.25, 0.5, 0.75, 1].map(pct => (
-                      <button key={pct} onClick={() => setStakePercent(pct)} className="flex-1 bg-[#0A0A0A] border border-[#333] py-1 font-mono text-[10px] text-[#6B6B6B] hover:text-white hover:border-[#00FF66] transition-colors">{pct === 1 ? 'MAX' : `${pct * 100}%`}</button>
-                    ))}
-                  </div>
-                  {stakePreviewRank && stakeInput && (
-                    <div className="mb-4 bg-[#0A0A0A] border border-[#222] p-3 font-mono text-xs">
-                      <span className="text-[#6B6B6B]">New rank: </span>
-                      <span className="text-white">{stakePreviewRank.emoji} {stakePreviewRank.label}</span>
-                      <span className="text-[#6B6B6B]"> ({stakePreviewRank.feePercent}% deposit fee)</span>
-                      {stakePreviewRank.rank !== currentRank.rank && (
-                        <span className="text-[#00FF66] ml-2">↑ Rank up!</span>
-                      )}
-                    </div>
-                  )}
-                  <button onClick={handleStake} disabled={stakingStep !== 'idle' || !stakeInput || parseFloat(stakeInput) <= 0 || parseFloat(stakeInput) > walletBalance}
-                    className="w-full bg-[#00FF66] text-black font-mono text-sm font-bold py-3 hover:bg-[#00DD55] transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-                    {stakingStep === 'approving' ? (<><div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" /> Approving...</>) :
-                     stakingStep === 'staking' ? (<><div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" /> Staking...</>) :
-                     'Stake $GDN'}
-                  </button>
-                </div>
-
-                {/* Unstake panel */}
-                <div className={`bg-[#111] border border-[#222] p-6 ${mobileStakeTab !== 'unstake' ? 'hidden md:block' : ''}`}>
-                  <div className="font-mono text-sm text-white mb-4 flex items-center gap-2"><Lock className="w-4 h-4 text-[#6B6B6B]" /> UNSTAKE $GDN</div>
-                  <div className="mb-2 flex justify-between font-mono text-xs text-[#6B6B6B]">
-                    <span>Amount</span>
-                    <span>Staked: {stakedAmount.toLocaleString()} GDN</span>
-                  </div>
-                  <input type="number" value={unstakeInput} onChange={e => setUnstakeInput(e.target.value)} placeholder="0" className="w-full bg-[#0A0A0A] border border-[#333] px-4 py-3 font-mono text-white text-lg focus:border-[#00FF66] focus:outline-none mb-2" />
-                  <div className="flex gap-2 mb-4">
-                    {[0.25, 0.5, 0.75, 1].map(pct => (
-                      <button key={pct} onClick={() => setUnstakePercent(pct)} className="flex-1 bg-[#0A0A0A] border border-[#333] py-1 font-mono text-[10px] text-[#6B6B6B] hover:text-white hover:border-[#00FF66] transition-colors">{pct === 1 ? 'MAX' : `${pct * 100}%`}</button>
-                    ))}
-                  </div>
-                  {unstakeWarning && unstakeInput && (
-                    <div className="mb-4 bg-[#1a1500] border border-yellow-600/40 p-3 font-mono text-xs flex items-start gap-2">
-                      <AlertTriangle className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
-                      <div>
-                        <span className="text-yellow-400">Warning:</span>
-                        <span className="text-[#6B6B6B]"> You&apos;ll drop to </span>
-                        <span className="text-white">{unstakePreviewRank?.emoji} {unstakePreviewRank?.label}</span>
-                        <span className="text-[#6B6B6B]"> ({unstakePreviewRank?.feePercent}% fees)</span>
-                      </div>
-                    </div>
-                  )}
-                  {unstakePreviewRank && unstakeInput && !unstakeWarning && (
-                    <div className="mb-4 bg-[#0A0A0A] border border-[#222] p-3 font-mono text-xs">
-                      <span className="text-[#6B6B6B]">New rank: </span>
-                      <span className="text-white">{unstakePreviewRank.emoji} {unstakePreviewRank.label}</span>
-                      <span className="text-[#6B6B6B]"> (no change)</span>
-                    </div>
-                  )}
-                  <button onClick={handleUnstake} disabled={stakingStep !== 'idle' || !unstakeInput || parseFloat(unstakeInput) <= 0 || parseFloat(unstakeInput) > stakedAmount}
-                    className="w-full bg-transparent border border-[#333] text-white font-mono text-sm font-bold py-3 hover:border-[#00FF66] transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-                    {stakingStep === 'unstaking' ? (<><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Unstaking...</>) : 'Unstake $GDN'}
-                  </button>
-                </div>
-              </div>
-
-              {/* 6c. Loyalty Ranks & Perks */}
-              <div className="mb-4">
-                <div className="font-mono text-lg text-white flex items-center gap-2 mb-4">
-                  <span className="text-[#00FF66]">&gt;</span> LOYALTY RANKS & PERKS
-                </div>
-                <div className="space-y-3">
-                  {RANK_TIERS.map((tier, idx) => {
-                    const isCurrent = idx === currentRankIdx;
-                    const isAchieved = idx < currentRankIdx;
-                    const isLocked = idx > currentRankIdx;
-                    const perks = RANK_PERKS[tier.rank];
-                    return (
-                      <div key={tier.rank} className={`bg-[#111] border p-4 md:p-5 transition-all ${isCurrent ? 'border-[#00FF66] shadow-[0_0_15px_rgba(0,255,102,0.1)]' : 'border-[#222]'} ${isLocked ? 'opacity-70' : ''}`}>
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-3">
-                            <span className="text-2xl">{tier.emoji}</span>
-                            <div>
-                              <span className="font-mono text-sm text-white font-bold">{tier.label.toUpperCase()}</span>
-                              <div className="font-mono text-[10px] text-[#6B6B6B]">
-                                {tier.rank === 'none' ? 'No minimum' :
-                                 tier.rank === 'platinum' ? `${(tier.minRatio * 100).toFixed(0)}% ratio + $500K deposits` :
-                                 `Min stake: ${(tier.minRatio * 100).toFixed(0)}% of deposits`}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {isCurrent && <span className="bg-[#00FF66] text-black font-mono text-[10px] font-bold px-2 py-0.5 uppercase tracking-wider">Current</span>}
-                            {isAchieved && <Check className="w-4 h-4 text-[#00FF66]" />}
-                            {isLocked && <Lock className="w-3 h-3 text-[#6B6B6B]" />}
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1">
-                          {PERKS_LIST.map(perk => {
-                            const val = perks[perk.key];
-                            const isBool = typeof val === 'boolean';
-                            return (
-                              <div key={perk.key} className="flex items-center justify-between font-mono text-xs py-0.5">
-                                <span className="text-[#6B6B6B]">{perk.label}</span>
-                                {isBool ? (
-                                  val ? <span className="text-[#00FF66]">✓</span> : <span className="text-[#333]">✗</span>
-                                ) : (
-                                  <span className="text-white">{val}</span>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                        {isLocked && idx === currentRankIdx + 1 && (
-                          <div className="mt-3 pt-3 border-t border-[#222] font-mono text-xs text-[#6B6B6B]">
-                            Stake <span className="text-[#00FF66]">{gdnNeeded.toLocaleString()} more GDN</span> to unlock
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </>
-          )}
+            <a href="/stake" className="bg-[#00FF66] text-black font-mono text-sm font-bold px-8 py-3 hover:bg-[#00DD55] transition-colors flex items-center gap-2 shrink-0">
+              Stake Now <ArrowRight className="w-4 h-4" />
+            </a>
+          </div>
         </div>
 
         {/* 7. TRADE $GDN */}

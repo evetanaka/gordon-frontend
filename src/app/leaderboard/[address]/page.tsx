@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   ChevronDown, ExternalLink, Copy, Power, Activity, ArrowUpRight, ArrowLeft, ArrowRight,
-  LayoutDashboard, Layers, Trophy, Coins, Check, Star
+  LayoutDashboard, Layers, Trophy, Coins, Check, Star, Zap
 } from 'lucide-react';
 
 // --- HOOKS ---
@@ -310,7 +310,7 @@ export default function WalletProfilePage({ params }: { params: { address: strin
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
           <a href="/" className="font-mono font-bold text-xl tracking-tighter text-white">GORDON<span className="text-[#00FF66]">.fi</span></a>
           <div className="hidden md:flex items-center gap-8">
-            {[{ l: 'Dashboard', h: '/dashboard' }, { l: 'Vaults', h: '/vaults' }, { l: 'Leaderboard', h: '/leaderboard' }, { l: '$GDN', h: '/token' }].map(link => (
+            {[{ l: 'Dashboard', h: '/dashboard' }, { l: 'Vaults', h: '/vaults' }, { l: 'Leaderboard', h: '/leaderboard' }, { l: 'Stake', h: '/stake' }, { l: '$GDN', h: '/token' }].map(link => (
               <a key={link.l} href={link.h} className={`font-mono text-xs uppercase tracking-widest relative group transition-colors ${link.l === 'Leaderboard' ? 'text-white' : 'text-[#6B6B6B] hover:text-[#00FF66]'}`}>
                 {link.l}<span className={`absolute -bottom-1 left-0 h-[1px] transition-all duration-300 ${link.l === 'Leaderboard' ? 'w-full bg-white' : 'w-0 bg-[#00FF66] group-hover:w-full'}`} />
               </a>
@@ -344,7 +344,7 @@ export default function WalletProfilePage({ params }: { params: { address: strin
       <div className="md:hidden fixed bottom-0 left-0 w-full bg-[#0A0A0A] border-t border-[#333] z-50 flex justify-around items-center h-16 pb-safe">
         <a href="/dashboard" className="flex flex-col items-center gap-1 text-[#6B6B6B]"><LayoutDashboard className="w-5 h-5" /><span className="font-mono text-[10px] tracking-widest uppercase">Dash</span></a>
         <a href="/vaults" className="flex flex-col items-center gap-1 text-[#6B6B6B]"><Layers className="w-5 h-5" /><span className="font-mono text-[10px] tracking-widest uppercase">Vaults</span></a>
-        <a href="/leaderboard" className="flex flex-col items-center gap-1 text-white"><Trophy className="w-5 h-5" /><span className="font-mono text-[10px] tracking-widest uppercase">Ranks</span></a>
+        <a href="/stake" className="flex flex-col items-center gap-1 text-[#6B6B6B]"><Zap className="w-5 h-5" /><span className="font-mono text-[10px] tracking-widest uppercase">Stake</span></a>
         <a href="/token" className="flex flex-col items-center gap-1 text-[#6B6B6B]"><Coins className="w-5 h-5" /><span className="font-mono text-[10px] tracking-widest uppercase">$GDN</span></a>
       </div>
 
