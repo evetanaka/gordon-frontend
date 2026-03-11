@@ -416,10 +416,10 @@ export default function VaultDetailPage({ params }: { params: { id: string } }) 
               { label: 'Stake', href: '/stake' },
               { label: '$GDN', href: '/token' },
             ].map(link => (
-              <a key={link.label} href={link.href} className={`font-mono text-xs uppercase tracking-widest relative group transition-colors ${link.label === 'Vaults' ? 'text-white' : 'text-[#6B6B6B] hover:text-[#00FF66]'}`}>
+              <Link key={link.label} href={link.href} className={`font-mono text-xs uppercase tracking-widest relative group transition-colors ${link.label === 'Vaults' ? 'text-white' : 'text-[#6B6B6B] hover:text-[#00FF66]'}`}>
                 {link.label}
                 <span className={`absolute -bottom-1 left-0 h-[1px] transition-all duration-300 ${link.label === 'Vaults' ? 'w-full bg-white' : 'w-0 bg-[#00FF66] group-hover:w-full'}`} />
-              </a>
+              </Link>
             ))}
           </div>
           <div>

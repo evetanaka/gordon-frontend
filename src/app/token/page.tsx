@@ -280,7 +280,7 @@ export default function TokenPage() {
           <Link href="/" className="font-mono font-bold text-xl tracking-tighter text-white">GORDON<span className="text-[#00FF66]">.fi</span></Link>
           <div className="hidden md:flex items-center gap-8">
             {navLinks.map(l => (
-              <a key={l.href} href={l.href} className={`font-mono text-xs uppercase tracking-widest transition-colors ${l.href === '/token' ? 'text-[#00FF66]' : 'text-[#6B6B6B] hover:text-white'}`}>{l.label}</a>
+              <Link key={l.href} href={l.href} className={`font-mono text-xs uppercase tracking-widest transition-colors ${l.href === '/token' ? 'text-[#00FF66]' : 'text-[#6B6B6B] hover:text-white'}`}>{l.label}</Link>
             ))}
           </div>
           <div className="flex items-center gap-3">

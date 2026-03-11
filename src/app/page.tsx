@@ -402,10 +402,10 @@ export default function Home() {
                 { label: 'Docs', href: '#' },
                 { label: '$GDN', href: '/token' },
               ].map(link => (
-                <a key={link.label} href={link.href} className="text-[#6B6B6B] hover:text-[#00FF66] relative group transition-colors">
+                <Link key={link.label} href={link.href} className="text-[#6B6B6B] hover:text-[#00FF66] relative group transition-colors">
                   {link.label}
                   <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-[#00FF66] transition-all duration-300 group-hover:w-full" />
-                </a>
+                </Link>
               ))}
             </div>
           )}
@@ -430,7 +430,7 @@ export default function Home() {
               { label: 'Docs', href: '#' },
               { label: '$GDN', href: '/token' },
             ].map(link => (
-              <a key={link.label} href={link.href} className="text-[#6B6B6B] py-2 border-b border-[#222]">{link.label}</a>
+              <Link key={link.label} href={link.href} className="text-[#6B6B6B] py-2 border-b border-[#222]">{link.label}</Link>
             ))}
             <Link href="/dashboard" className="bg-[#00FF66] text-black font-bold py-3 mt-4 w-full block text-center">LAUNCH APP -{'>'}</Link>
           </div>

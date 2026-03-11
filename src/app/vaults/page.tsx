@@ -294,17 +294,17 @@ const VaultCardItem = ({ vault, index, isConnected, showToast }: {
           </button>
         ) : hasPosition ? (
           <div className="grid grid-cols-2 gap-3">
-            <a href={`/vaults/${vault.id}`} className="py-3 bg-[#00FF66] text-black font-mono font-bold text-xs uppercase tracking-wider hover:bg-white transition-colors text-center">
+            <Link href={`/vaults/${vault.id}`} className="py-3 bg-[#00FF66] text-black font-mono font-bold text-xs uppercase tracking-wider hover:bg-white transition-colors text-center">
               Deposit More
-            </a>
-            <a href={`/vaults/${vault.id}`} className="py-3 border border-[#333] text-white font-mono text-xs uppercase tracking-widest hover:border-[#00FF66] hover:text-[#00FF66] transition-colors text-center">
+            </Link>
+            <Link href={`/vaults/${vault.id}`} className="py-3 border border-[#333] text-white font-mono text-xs uppercase tracking-widest hover:border-[#00FF66] hover:text-[#00FF66] transition-colors text-center">
               Manage
-            </a>
+            </Link>
           </div>
         ) : (
-          <a href={`/vaults/${vault.id}`} className="w-full py-3 bg-[#00FF66] text-black font-mono font-bold text-xs uppercase tracking-wider hover:bg-white transition-colors flex items-center justify-center gap-2">
+          <Link href={`/vaults/${vault.id}`} className="w-full py-3 bg-[#00FF66] text-black font-mono font-bold text-xs uppercase tracking-wider hover:bg-white transition-colors flex items-center justify-center gap-2">
             Deposit <ArrowRight className="w-3 h-3" />
-          </a>
+          </Link>
         )}
       </div>
     </div>
@@ -398,10 +398,10 @@ export default function VaultsPage() {
               { label: 'Stake', href: '/stake' },
               { label: '$GDN', href: '/token' },
             ].map(link => (
-              <a key={link.label} href={link.href} className={`font-mono text-xs uppercase tracking-widest relative group transition-colors ${link.label === 'Vaults' ? 'text-white' : 'text-[#6B6B6B] hover:text-[#00FF66]'}`}>
+              <Link key={link.label} href={link.href} className={`font-mono text-xs uppercase tracking-widest relative group transition-colors ${link.label === 'Vaults' ? 'text-white' : 'text-[#6B6B6B] hover:text-[#00FF66]'}`}>
                 {link.label}
                 <span className={`absolute -bottom-1 left-0 h-[1px] transition-all duration-300 ${link.label === 'Vaults' ? 'w-full bg-white' : 'w-0 bg-[#00FF66] group-hover:w-full'}`} />
-              </a>
+              </Link>
             ))}
           </div>
           <div>

@@ -233,9 +233,9 @@ const PositionRow = ({ pos, index }: { pos: any; index: number }) => {
         {pos.since}
       </div>
       <div className="col-span-1 md:text-right mt-4 md:mt-0">
-        <a href={`/vaults/${pos.id}`} className="w-full md:w-auto text-xs font-mono text-[#6B6B6B] hover:text-[#00FF66] transition-colors uppercase tracking-widest flex justify-center md:justify-end items-center gap-1 group">
+        <Link href={`/vaults/${pos.id}`} className="w-full md:w-auto text-xs font-mono text-[#6B6B6B] hover:text-[#00FF66] transition-colors uppercase tracking-widest flex justify-center md:justify-end items-center gap-1 group">
           [Manage <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />]
-        </a>
+        </Link>
       </div>
     </div>
   );
@@ -327,10 +327,10 @@ export default function Dashboard() {
               { label: 'Stake', href: '/stake' },
               { label: '$GDN', href: '/token' },
             ].map(link => (
-              <a key={link.label} href={link.href} className={`font-mono text-xs uppercase tracking-widest relative group transition-colors ${link.label === 'Dashboard' ? 'text-white' : 'text-[#6B6B6B] hover:text-[#00FF66]'}`}>
+              <Link key={link.label} href={link.href} className={`font-mono text-xs uppercase tracking-widest relative group transition-colors ${link.label === 'Dashboard' ? 'text-white' : 'text-[#6B6B6B] hover:text-[#00FF66]'}`}>
                 {link.label}
                 <span className={`absolute -bottom-1 left-0 h-[1px] transition-all duration-300 ${link.label === 'Dashboard' ? 'w-full bg-white' : 'w-0 bg-[#00FF66] group-hover:w-full'}`} />
-              </a>
+              </Link>
             ))}
           </div>
           <div>

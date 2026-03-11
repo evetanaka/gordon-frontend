@@ -209,9 +209,9 @@ export default function LeaderboardPage() {
           <Link href="/" className="font-mono font-bold text-xl tracking-tighter text-white">GORDON<span className="text-[#00FF66]">.fi</span></Link>
           <div className="hidden md:flex items-center gap-8">
             {[{ l: 'Dashboard', h: '/dashboard' }, { l: 'Vaults', h: '/vaults' }, { l: 'Leaderboard', h: '/leaderboard' }, { l: 'Stake', h: '/stake' }, { l: '$GDN', h: '/token' }].map(link => (
-              <a key={link.l} href={link.h} className={`font-mono text-xs uppercase tracking-widest relative group transition-colors ${link.l === 'Leaderboard' ? 'text-white' : 'text-[#6B6B6B] hover:text-[#00FF66]'}`}>
+              <Link key={link.l} href={link.h} className={`font-mono text-xs uppercase tracking-widest relative group transition-colors ${link.l === 'Leaderboard' ? 'text-white' : 'text-[#6B6B6B] hover:text-[#00FF66]'}`}>
                 {link.l}<span className={`absolute -bottom-1 left-0 h-[1px] transition-all duration-300 ${link.l === 'Leaderboard' ? 'w-full bg-white' : 'w-0 bg-[#00FF66] group-hover:w-full'}`} />
-              </a>
+              </Link>
             ))}
           </div>
           <div>
@@ -340,7 +340,7 @@ export default function LeaderboardPage() {
               </div>
 
               {visible.map((w, i) => (
-                <a key={w.address} href={`/leaderboard/${w.short}`}
+                <Link key={w.address} href={`/leaderboard/${w.short}`}
                   className={`grid grid-cols-12 gap-2 px-4 py-3 border-b border-[#222] hover:bg-[#111] transition-all items-center group cursor-pointer animate-fade-in-up ${w.rank <= 3 ? `border-l-2 ${w.rank === 1 ? 'border-l-[#FFD700]' : w.rank === 2 ? 'border-l-[#C0C0C0]' : 'border-l-[#CD7F32]'}` : ''}`}
                   style={{ animationDelay: `${i * 30}ms`, opacity: 0 }}>
                   <div className="col-span-1 font-mono text-xs text-[#6B6B6B]">{w.rank <= 3 ? medals[w.rank - 1] : w.rank}</div>
@@ -360,14 +360,14 @@ export default function LeaderboardPage() {
                   <div className="col-span-1 text-right">
                     <ArrowRight className="w-3 h-3 text-[#333] group-hover:text-[#00FF66] transition-colors inline" />
                   </div>
-                </a>
+                </Link>
               ))}
             </div>
 
             {/* Mobile Cards */}
             <div className="md:hidden flex flex-col gap-3">
               {visible.map((w, i) => (
-                <a key={w.address} href={`/leaderboard/${w.short}`}
+                <Link key={w.address} href={`/leaderboard/${w.short}`}
                   className={`bg-[#111] border border-[#333] p-4 hover:border-[#6B6B6B] transition-colors animate-fade-in-up ${w.rank <= 3 ? `border-l-2 ${w.rank === 1 ? 'border-l-[#FFD700]' : w.rank === 2 ? 'border-l-[#C0C0C0]' : 'border-l-[#CD7F32]'}` : ''}`}
                   style={{ animationDelay: `${i * 30}ms`, opacity: 0 }}>
                   <div className="flex justify-between items-start mb-3">
@@ -396,7 +396,7 @@ export default function LeaderboardPage() {
                     {w.vault && <span>{w.vault} · </span>}
                     {fmtVol(w.volume)} vol · {w.trackedDays}d
                   </div>
-                </a>
+                </Link>
               ))}
             </div>
 

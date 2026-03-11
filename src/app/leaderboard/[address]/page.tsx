@@ -312,9 +312,9 @@ export default function WalletProfilePage({ params }: { params: { address: strin
           <Link href="/" className="font-mono font-bold text-xl tracking-tighter text-white">GORDON<span className="text-[#00FF66]">.fi</span></Link>
           <div className="hidden md:flex items-center gap-8">
             {[{ l: 'Dashboard', h: '/dashboard' }, { l: 'Vaults', h: '/vaults' }, { l: 'Leaderboard', h: '/leaderboard' }, { l: 'Stake', h: '/stake' }, { l: '$GDN', h: '/token' }].map(link => (
-              <a key={link.l} href={link.h} className={`font-mono text-xs uppercase tracking-widest relative group transition-colors ${link.l === 'Leaderboard' ? 'text-white' : 'text-[#6B6B6B] hover:text-[#00FF66]'}`}>
+              <Link key={link.l} href={link.h} className={`font-mono text-xs uppercase tracking-widest relative group transition-colors ${link.l === 'Leaderboard' ? 'text-white' : 'text-[#6B6B6B] hover:text-[#00FF66]'}`}>
                 {link.l}<span className={`absolute -bottom-1 left-0 h-[1px] transition-all duration-300 ${link.l === 'Leaderboard' ? 'w-full bg-white' : 'w-0 bg-[#00FF66] group-hover:w-full'}`} />
-              </a>
+              </Link>
             ))}
           </div>
           <div>
@@ -534,9 +534,9 @@ export default function WalletProfilePage({ params }: { params: { address: strin
                 <div key={v.id} className="bg-[#111] border border-[#333] p-5 hover:border-[#6B6B6B] transition-colors">
                   <div className="flex justify-between items-center mb-3">
                     <div className="font-sans font-bold text-white">{v.rank <= 3 ? medals[v.rank - 1] : `#${v.rank}`} {v.name}</div>
-                    <a href={`/vaults/${v.id}`} className="font-mono text-[10px] text-[#6B6B6B] hover:text-[#00FF66] uppercase tracking-widest transition-colors flex items-center gap-1">
+                    <Link href={`/vaults/${v.id}`} className="font-mono text-[10px] text-[#6B6B6B] hover:text-[#00FF66] uppercase tracking-widest transition-colors flex items-center gap-1">
                       View Vault <ArrowRight className="w-3 h-3" />
-                    </a>
+                    </Link>
                   </div>
                   <div className="flex items-center gap-4 font-mono text-xs text-[#6B6B6B] mb-3">
                     <span>Rank #{v.rank}</span>
