@@ -3,8 +3,8 @@
 import React from 'react';
 
 // Base shimmer block
-export const Shimmer = ({ className = '' }: { className?: string }) => (
-  <div className={`bg-[#111] overflow-hidden relative ${className}`}>
+export const Shimmer = ({ className = '', style }: { className?: string; style?: React.CSSProperties }) => (
+  <div className={`bg-[#111] overflow-hidden relative ${className}`} style={style}>
     <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-[#222] to-transparent" />
   </div>
 );
