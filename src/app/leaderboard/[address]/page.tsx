@@ -243,6 +243,7 @@ export default function WalletProfilePage({ params }: { params: { address: strin
   const showToast = useCallback((m: string) => { setToastMsg(m); setToastVis(true); setTimeout(() => setToastVis(false), 3000); }, []);
 
   const toggleWatchlist = () => {
+    if (!profile) return;
     try {
       const wl = JSON.parse(localStorage.getItem('gordon_watchlist') || '[]');
       const next = watchlisted ? wl.filter((a: string) => a !== profile.short) : [...wl, profile.short];
@@ -251,6 +252,32 @@ export default function WalletProfilePage({ params }: { params: { address: strin
       showToast(watchlisted ? 'Removed from watchlist' : 'Added to watchlist');
     } catch {}
   };
+
+  const medals = ['🥇', '🥈', '🥉'];
+  const wrColor = (wr: number) => wr >= 75 ? 'text-[#00FF66]' : wr >= 60 ? 'text-white' : 'text-[#FF3B3B]';
+  const pnlColor = (v: number) => v > 0 ? 'text-[#00FF66]' : v < 0 ? 'text-[#FF3B3B]' : 'text-[#6B6B6B]';
+  const fmtK = (v: number) => Math.abs(v) >= 1000 ? `$${(Math.abs(v) / 1000).toFixed(1)}K` : `$${Math.abs(v)}`;
+  const fmtVol = (v: number) => v >= 1000000 ? `$${(v / 1000000).toFixed(1)}M` : `$${(v / 1000).toFixed(0)}K`;
+
+  const filteredTrades = profile ? profile.trades.filter((t: any) => {
+    if (tradeTab === 'wins') return t.result === 'win';
+    if (tradeTab === 'losses') return t.result === 'loss';
+    if (tradeTab === 'open') return t.result === 'open';
+    return true;
+  }) : [];
+  const visibleTrades = filteredTrades.slice(0, tradeCount);
+
+  const chartData = profile ? profile.winRateHistory.map((d: any) => d.rate) : [];
+  const avgData = profile ? profile.winRateHistory.map((d: any) => d.avgRate) : [];
+
+  // Stat count-ups (always called, use 0 if no profile)
+  const [wrRef, wrVal] = useCountUp(profile?.winRate || 0, 2000, 0, 1, '', '%');
+  const [pnlRef, pnlVal] = useCountUp((profile?.pnl30d || 0) / 1000, 2000, 0, 1, '+$', 'K');
+  const [roiRef, roiVal] = useCountUp(profile?.roiAllTime || 0, 2000, 0, 0, '+', '%');
+  const [volRef, volVal] = useCountUp((profile?.totalVolume || 0) / 1000000, 2000, 0, 1, '$', 'M');
+
+  // Avatar gradient from address
+  const hash = profile ? profile.address.split('').reduce((a: number, c: string) => a + c.charCodeAt(0), 0) : 0;
 
   if (!profile) {
     return (
@@ -262,32 +289,6 @@ export default function WalletProfilePage({ params }: { params: { address: strin
       </div>
     );
   }
-
-  const medals = ['🥇', '🥈', '🥉'];
-  const wrColor = (wr: number) => wr >= 75 ? 'text-[#00FF66]' : wr >= 60 ? 'text-white' : 'text-[#FF3B3B]';
-  const pnlColor = (v: number) => v > 0 ? 'text-[#00FF66]' : v < 0 ? 'text-[#FF3B3B]' : 'text-[#6B6B6B]';
-  const fmtK = (v: number) => Math.abs(v) >= 1000 ? `$${(Math.abs(v) / 1000).toFixed(1)}K` : `$${Math.abs(v)}`;
-  const fmtVol = (v: number) => v >= 1000000 ? `$${(v / 1000000).toFixed(1)}M` : `$${(v / 1000).toFixed(0)}K`;
-
-  const filteredTrades = profile.trades.filter((t: any) => {
-    if (tradeTab === 'wins') return t.result === 'win';
-    if (tradeTab === 'losses') return t.result === 'loss';
-    if (tradeTab === 'open') return t.result === 'open';
-    return true;
-  });
-  const visibleTrades = filteredTrades.slice(0, tradeCount);
-
-  const chartData = profile.winRateHistory.map((d: any) => d.rate);
-  const avgData = profile.winRateHistory.map((d: any) => d.avgRate);
-
-  // Stat count-ups
-  const [wrRef, wrVal] = useCountUp(profile.winRate, 2000, 0, 1, '', '%');
-  const [pnlRef, pnlVal] = useCountUp(profile.pnl30d / 1000, 2000, 0, 1, '+$', 'K');
-  const [roiRef, roiVal] = useCountUp(profile.roiAllTime, 2000, 0, 0, '+', '%');
-  const [volRef, volVal] = useCountUp(profile.totalVolume / 1000000, 2000, 0, 1, '$', 'M');
-
-  // Avatar gradient from address
-  const hash = profile.address.split('').reduce((a: number, c: string) => a + c.charCodeAt(0), 0);
   const hue1 = hash % 360;
   const hue2 = (hash * 7) % 360;
 
