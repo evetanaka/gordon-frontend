@@ -5,7 +5,7 @@ import {
   ChevronDown, ExternalLink, Copy, Power, Activity, ArrowUpRight, ArrowLeft, ArrowRight,
   LayoutDashboard, Layers, Trophy, Coins, Check, Clock, AlertTriangle
 } from 'lucide-react';
-import { DepositModal } from '@/components/DepositModal';
+import { DepositModal } from '../../../components/DepositModal';
 
 // --- HOOKS ---
 
