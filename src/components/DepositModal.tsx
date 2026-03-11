@@ -96,7 +96,8 @@ interface DepositModalProps {
 
 export function DepositModal({ isOpen, onClose, vaultId, onSuccess }: DepositModalProps) {
   const [amount, setAmount] = useState('');
-  const [step, setStep] = useState<'input' | 'approving' | 'approved' | 'depositing' | 'success'>('input');
+  type Step = 'input' | 'approving' | 'approved' | 'depositing' | 'success';
+  const [step, setStep] = useState<Step>('input');
   const [hasApproval, setHasApproval] = useState(MOCK_USER.hasApproval);
   const [rankExpanded, setRankExpanded] = useState(true);
   const [mounted, setMounted] = useState(false);
@@ -363,8 +364,8 @@ export function DepositModal({ isOpen, onClose, vaultId, onSuccess }: DepositMod
                   </div>
                   <div className={`flex-1 h-[1px] ${hasApproval ? 'bg-[#00FF66]' : 'bg-[#333]'}`} />
                   <div className="flex items-center gap-1">
-                    <div className={`w-5 h-5 flex items-center justify-center text-[10px] font-mono font-bold ${step === 'success' ? 'bg-[#00FF66] text-black' : step === 'depositing' ? 'bg-[#00FF66]/50 text-black animate-pulse' : hasApproval ? 'bg-[#333] text-white' : 'bg-[#333] text-[#6B6B6B]'}`}>
-                      {step === 'success' ? <Check className="w-3 h-3" /> : '2'}
+                    <div className={`w-5 h-5 flex items-center justify-center text-[10px] font-mono font-bold ${(step as string) === 'success' ? 'bg-[#00FF66] text-black' : step === 'depositing' ? 'bg-[#00FF66]/50 text-black animate-pulse' : hasApproval ? 'bg-[#333] text-white' : 'bg-[#333] text-[#6B6B6B]'}`}>
+                      {(step as string) === 'success' ? <Check className="w-3 h-3" /> : '2'}
                     </div>
                     <span className="font-mono text-[10px] text-[#6B6B6B] uppercase tracking-widest hidden md:inline">Deposit</span>
                   </div>
