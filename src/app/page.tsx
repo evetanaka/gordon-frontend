@@ -395,9 +395,14 @@ export default function Home() {
           </div>
           {!isMobile && (
             <div className="hidden md:flex items-center gap-8 font-mono text-sm tracking-widest uppercase">
-              {['Vaults', 'Leaderboard', 'Docs', '$GDN'].map(link => (
-                <a key={link} href="#" className="text-[#6B6B6B] hover:text-[#00FF66] relative group transition-colors">
-                  {link}
+              {[
+                { label: 'Vaults', href: '/vaults' },
+                { label: 'Leaderboard', href: '/leaderboard' },
+                { label: 'Docs', href: '#' },
+                { label: '$GDN', href: '/token' },
+              ].map(link => (
+                <a key={link.label} href={link.href} className="text-[#6B6B6B] hover:text-[#00FF66] relative group transition-colors">
+                  {link.label}
                   <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-[#00FF66] transition-all duration-300 group-hover:w-full" />
                 </a>
               ))}
@@ -405,10 +410,10 @@ export default function Home() {
           )}
           <div className="flex items-center gap-4">
             {!isMobile ? (
-              <button className="bg-[#00FF66] text-black font-mono font-bold text-sm px-6 py-3 uppercase tracking-wider hover:bg-white transition-colors group flex items-center gap-2">
+              <a href="/dashboard" className="bg-[#00FF66] text-black font-mono font-bold text-sm px-6 py-3 uppercase tracking-wider hover:bg-white transition-colors group flex items-center gap-2">
                 Launch App
                 <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-              </button>
+              </a>
             ) : (
               <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-[#00FF66]">
                 {mobileMenuOpen ? <X /> : <Menu />}
@@ -418,10 +423,15 @@ export default function Home() {
         </div>
         {isMobile && mobileMenuOpen && (
           <div className="absolute top-20 left-0 w-full bg-[#0A0A0A] border-b border-[#333] p-4 flex flex-col gap-4 font-mono uppercase tracking-widest text-sm z-50">
-            {['Vaults', 'Leaderboard', 'Docs', '$GDN'].map(link => (
-              <a key={link} href="#" className="text-[#6B6B6B] py-2 border-b border-[#222]">{link}</a>
+            {[
+              { label: 'Vaults', href: '/vaults' },
+              { label: 'Leaderboard', href: '/leaderboard' },
+              { label: 'Docs', href: '#' },
+              { label: '$GDN', href: '/token' },
+            ].map(link => (
+              <a key={link.label} href={link.href} className="text-[#6B6B6B] py-2 border-b border-[#222]">{link.label}</a>
             ))}
-            <button className="bg-[#00FF66] text-black font-bold py-3 mt-4 w-full">LAUNCH APP -{'>'}</button>
+            <a href="/dashboard" className="bg-[#00FF66] text-black font-bold py-3 mt-4 w-full block text-center">LAUNCH APP -{'>'}</a>
           </div>
         )}
       </nav>
@@ -443,9 +453,9 @@ export default function Home() {
               Gordon tracks the most profitable Polymarket wallets and auto-copies their trades via decentralized vaults.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <button className="bg-[#00FF66] text-black font-mono font-bold px-8 py-4 uppercase tracking-wider hover:bg-white transition-colors">
+              <a href="/vaults" className="bg-[#00FF66] text-black font-mono font-bold px-8 py-4 uppercase tracking-wider hover:bg-white transition-colors text-center">
                 Deposit Now
-              </button>
+              </a>
               <button className="border border-[#333] text-white font-mono font-bold px-8 py-4 uppercase tracking-wider hover:border-[#00FF66] hover:text-[#00FF66] transition-colors flex justify-center items-center gap-2">
                 Read Docs
                 <ExternalLink className="w-4 h-4" />
@@ -572,9 +582,9 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
-                <button className="w-full border border-black text-black font-mono font-bold py-4 uppercase tracking-wider hover:bg-[#00FF66] hover:border-[#00FF66] transition-colors">
+                <a href="/vaults/alpha" className="w-full border border-black text-black font-mono font-bold py-4 uppercase tracking-wider hover:bg-[#00FF66] hover:border-[#00FF66] transition-colors block text-center">
                   Deposit USDC
-                </button>
+                </a>
               </div>
             </TiltCard>
 
@@ -612,9 +622,9 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
-                <button className="w-full bg-[#00FF66] text-black font-mono font-bold py-4 uppercase tracking-wider hover:bg-white transition-colors">
+                <a href="/vaults/degen" className="w-full bg-[#00FF66] text-black font-mono font-bold py-4 uppercase tracking-wider hover:bg-white transition-colors block text-center">
                   Deposit USDC
-                </button>
+                </a>
               </div>
             </TiltCard>
           </div>
@@ -678,9 +688,9 @@ export default function Home() {
           <h2 className="text-5xl md:text-7xl font-bold mb-8">
             STOP TRADING.<br/>START TRACKING.
           </h2>
-          <button className="bg-black text-[#00FF66] font-mono font-bold text-lg px-10 py-5 uppercase tracking-wider hover:bg-white hover:text-black transition-colors shadow-[8px_8px_0px_#0A0A0A] hover:shadow-[4px_4px_0px_#0A0A0A] hover:translate-x-1 hover:translate-y-1">
+          <a href="/dashboard" className="inline-block bg-black text-[#00FF66] font-mono font-bold text-lg px-10 py-5 uppercase tracking-wider hover:bg-white hover:text-black transition-colors shadow-[8px_8px_0px_#0A0A0A] hover:shadow-[4px_4px_0px_#0A0A0A] hover:translate-x-1 hover:translate-y-1">
             Launch App
-          </button>
+          </a>
         </div>
       </section>
 
