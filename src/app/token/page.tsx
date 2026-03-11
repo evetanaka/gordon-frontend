@@ -76,12 +76,16 @@ const Toast = ({ message, visible }: { message: string; visible: boolean }) => {
 const SectionHeader = ({ title, subtitle }: { title: string; subtitle?: string }) => {
   const [ref, isVisible] = useScrollReveal();
   return (
-    <div ref={ref} className={`mb-8 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-      <h2 className="font-mono text-2xl md:text-3xl text-white flex items-center gap-2">
-        <span className="text-[#00FF66]">&gt;</span> {title}
-      </h2>
-      <div className="h-[2px] w-16 bg-[#00FF66] mt-2 mb-1" />
-      {subtitle && <p className="font-mono text-sm text-[#6B6B6B] mt-2">{subtitle}</p>}
+    <div ref={ref} className={`mb-6 transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+      <div className="flex items-center gap-4">
+        <h2 className="text-[#6B6B6B] font-mono text-xs uppercase tracking-widest flex items-center gap-2">
+          <span className="text-[#00FF66]">&gt;</span> {title}
+        </h2>
+      </div>
+      <div className="w-full h-[1px] bg-[#333] mt-2 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-1/4 h-full bg-[#00FF66] opacity-20 animate-glitch-h" />
+      </div>
+      {subtitle && <p className="font-mono text-xs text-[#6B6B6B] mt-3">{subtitle}</p>}
     </div>
   );
 };
@@ -308,7 +312,7 @@ export default function TokenPage() {
         <SectionHeader title="$GDN TOKEN" subtitle="The deflationary engine behind Gordon.fi" />
 
         {/* 2. TOKEN METRICS */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-12">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-8">
           <MetricCard index={0} label="PRICE" value={`$${TOKEN_DATA.price}`} sub={`+${TOKEN_DATA.priceChange24h}% 24h`} />
           <MetricCard index={1} label="MARKET CAP" value="$84.2M" sub={`#${TOKEN_DATA.marketCapRank} rank`} />
           <MetricCard index={2} label="24H VOLUME" value="$3.2M" sub={`+${TOKEN_DATA.volumeChange}% vs 7d avg`} />
@@ -318,9 +322,9 @@ export default function TokenPage() {
         </div>
 
         {/* 3. PRICE CHART */}
-        <div className="mb-12">
+        <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-mono text-lg text-white flex items-center gap-2"><span className="text-[#00FF66]">&gt;</span> PRICE CHART</h3>
+            <h3 className="font-mono text-xs text-[#6B6B6B] uppercase tracking-widest flex items-center gap-2"><span className="text-[#00FF66]">&gt;</span> PRICE CHART</h3>
             <div className="flex gap-1">
               {['1H', '1D', '7D', '30D', 'ALL'].map(p => (
                 <button key={p} onClick={() => setChartPeriod(p)} className={`px-3 py-1 font-mono text-[10px] uppercase tracking-wider transition-colors ${chartPeriod === p ? 'bg-[#00FF66] text-black' : 'bg-[#111] text-[#6B6B6B] border border-[#222] hover:text-white'}`}>{p}</button>
@@ -338,7 +342,7 @@ export default function TokenPage() {
         </div>
 
         {/* 4. BUYBACK & BURN LOG */}
-        <div className="mb-12">
+        <div className="mb-8">
           <SectionHeader title="BUYBACK & BURN LOG" />
           <div className="bg-[#0A0A0A] border border-[#222] p-4 md:p-6 font-mono text-sm max-h-[500px] overflow-y-auto">
             <div className="text-[#00FF66] mb-4">gordon@fi:~$ tail -f buyback.log</div>
@@ -376,7 +380,7 @@ export default function TokenPage() {
         </div>
 
         {/* 5. FLYWHEEL DIAGRAM */}
-        <div className="mb-12">
+        <div className="mb-8">
           <SectionHeader title="THE $GDN FLYWHEEL" />
           <div className="bg-[#111] border border-[#222] p-6 md:p-8">
             {/* Desktop: circular flow */}
@@ -434,7 +438,7 @@ export default function TokenPage() {
         </div>
 
         {/* 6. STAKE CTA */}
-        <div className="mb-12">
+        <div className="mb-8">
           <div className="bg-[#111] border border-[#222] p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-[#00FF66]/10 border border-[#00FF66]/20 flex items-center justify-center">
@@ -452,7 +456,7 @@ export default function TokenPage() {
         </div>
 
         {/* 7. TRADE $GDN */}
-        <div className="mb-12">
+        <div className="mb-8">
           <SectionHeader title="TRADE $GDN" />
           <div className="bg-[#111] border border-[#222] p-6">
             <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6">
@@ -498,6 +502,8 @@ export default function TokenPage() {
 
       {/* Keyframe for burn log animation */}
       <style jsx global>{`
+        @keyframes glitch-h { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(100%); } }
+        .animate-glitch-h { animation: glitch-h 3s linear infinite; }
         @keyframes slideInLeft {
           from { opacity: 0; transform: translateX(-20px); }
           to { opacity: 1; transform: translateX(0); }

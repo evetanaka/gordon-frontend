@@ -262,12 +262,14 @@ export default function StakePage() {
       <main className="max-w-5xl mx-auto px-4 md:px-6 pt-24 pb-12 md:pb-24">
 
         {/* HEADER */}
-        <div className="mb-10">
-          <h1 className="font-mono text-2xl md:text-3xl text-white flex items-center gap-2 mb-1">
+        <div className="mb-8">
+          <h1 className="text-[#6B6B6B] font-mono text-xs uppercase tracking-widest flex items-center gap-2">
             <span className="text-[#00FF66]">&gt;</span> STAKE $GDN
           </h1>
-          <div className="h-[2px] w-16 bg-[#00FF66] mt-2 mb-3" />
-          <p className="font-mono text-sm text-[#6B6B6B] max-w-xl">
+          <div className="w-full h-[1px] bg-[#333] mt-2 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-1/4 h-full bg-[#00FF66] opacity-20 animate-glitch-h" />
+          </div>
+          <p className="font-mono text-xs text-[#6B6B6B] mt-3 max-w-xl">
             Stake $GDN to climb Loyalty Ranks, reduce platform fees, and unlock exclusive perks. No lockup period — unstake anytime.
           </p>
         </div>
@@ -519,11 +521,11 @@ export default function StakePage() {
             </div>
 
             {/* LOYALTY RANKS — Comparison Table */}
-            <div className="mb-10">
-              <h2 className="font-mono text-xl md:text-2xl text-white flex items-center gap-2 mb-2">
+            <div className="mb-8">
+              <h2 className="text-[#6B6B6B] font-mono text-xs uppercase tracking-widest flex items-center gap-2 mb-2">
                 <span className="text-[#00FF66]">&gt;</span> LOYALTY RANKS
               </h2>
-              <div className="h-[2px] w-16 bg-[#00FF66] mt-2 mb-6" />
+              <div className="w-full h-[1px] bg-[#333] mt-2 mb-6 relative overflow-hidden"><div className="absolute top-0 left-0 w-1/4 h-full bg-[#00FF66] opacity-20 animate-glitch-h" /></div>
 
               {/* Desktop: comparison table */}
               <div className="hidden md:block overflow-x-auto">
@@ -613,11 +615,11 @@ export default function StakePage() {
             </div>
 
             {/* HOW IT WORKS */}
-            <div className="mb-10">
-              <h2 className="font-mono text-xl md:text-2xl text-white flex items-center gap-2 mb-2">
+            <div className="mb-8">
+              <h2 className="text-[#6B6B6B] font-mono text-xs uppercase tracking-widest flex items-center gap-2 mb-2">
                 <span className="text-[#00FF66]">&gt;</span> HOW IT WORKS
               </h2>
-              <div className="h-[2px] w-16 bg-[#00FF66] mt-2 mb-6" />
+              <div className="w-full h-[1px] bg-[#333] mt-2 mb-6 relative overflow-hidden"><div className="absolute top-0 left-0 w-1/4 h-full bg-[#00FF66] opacity-20 animate-glitch-h" /></div>
 
               <div className="grid md:grid-cols-3 gap-4">
                 <HowItWorksCard delay={0} step="01" title="Stake $GDN" desc="Deposit $GDN tokens into the staking contract. No lockup — withdraw anytime." icon={<Zap className="w-6 h-6" />} />
@@ -655,6 +657,8 @@ export default function StakePage() {
       </div>
 
       <style jsx global>{`
+        @keyframes glitch-h { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(100%); } }
+        .animate-glitch-h { animation: glitch-h 3s linear infinite; }
         @keyframes fade-in-up { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
         .animate-fade-in-up { animation: fade-in-up 0.3s ease-out; }
       `}</style>
