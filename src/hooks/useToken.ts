@@ -6,6 +6,22 @@ import GDNTokenABI from '@/config/abis/GDNToken.json'
 import MockUSDCABI from '@/config/abis/MockUSDC.json'
 import { CONTRACTS } from '@/config/contracts'
 
+export function useAllowance(token: 'GDN' | 'USDC', spender: Address | undefined) {
+  const { address } = useAccount()
+  const tokenAddress = (token === 'GDN' ? CONTRACTS.GDNToken : CONTRACTS.MockUSDC) as Address
+  const abi = token === 'GDN' ? GDNTokenABI : MockUSDCABI
+
+  const result = useReadContract({
+    address: tokenAddress,
+    abi,
+    functionName: 'allowance',
+    args: address && spender ? [address, spender] : undefined,
+    query: { enabled: !!address && !!spender },
+  })
+
+  return { allowance: result.data as bigint | undefined, ...result }
+}
+
 export function useToken(token: 'GDN' | 'USDC') {
   const { address } = useAccount()
   const { writeContract, isPending: isWritePending } = useWriteContract()
@@ -29,14 +45,6 @@ export function useToken(token: 'GDN' | 'USDC') {
     query: { enabled: token === 'GDN' },
   })
 
-  const getAllowance = (spender: Address) => useReadContract({
-    address: tokenAddress,
-    abi,
-    functionName: 'allowance',
-    args: address ? [address, spender] : undefined,
-    query: { enabled: !!address },
-  })
-
   const approve = (spender: Address, amount: string) => {
     writeContract({
       address: tokenAddress,
@@ -49,7 +57,6 @@ export function useToken(token: 'GDN' | 'USDC') {
   return {
     balance: balance.data as bigint | undefined,
     totalSupply: totalSupply.data as bigint | undefined,
-    getAllowance,
     approve,
     decimals,
     tokenAddress,
