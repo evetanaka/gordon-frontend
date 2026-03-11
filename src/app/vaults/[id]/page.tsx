@@ -6,6 +6,7 @@ import {
   LayoutDashboard, Layers, Trophy, Coins, Check, Clock, AlertTriangle
 } from 'lucide-react';
 import { DepositModal } from '../../../components/DepositModal';
+import { WithdrawModal } from '../../../components/WithdrawModal';
 
 // --- HOOKS ---
 
@@ -346,6 +347,7 @@ export default function VaultDetailPage({ params }: { params: { id: string } }) 
   const [toastMessage, setToastMessage] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
   const [depositOpen, setDepositOpen] = useState(false);
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   useOnClickOutside(dropdownRef, () => setDropdownOpen(false));
@@ -545,7 +547,7 @@ export default function VaultDetailPage({ params }: { params: { id: string } }) 
                 </div>
                 <div className="grid grid-cols-2 gap-3 max-w-xs">
                   <button onClick={() => setDepositOpen(true)} className="py-2.5 bg-[#00FF66] text-black font-mono font-bold text-xs uppercase tracking-wider hover:bg-white transition-colors">Deposit More</button>
-                  <button onClick={() => showToast('Coming soon')} className="py-2.5 border border-[#333] text-white font-mono text-xs uppercase tracking-widest hover:border-[#00FF66] hover:text-[#00FF66] transition-colors">Withdraw</button>
+                  <button onClick={() => setWithdrawOpen(true)} className="py-2.5 border border-[#333] text-white font-mono text-xs uppercase tracking-widest hover:border-[#00FF66] hover:text-[#00FF66] transition-colors">Withdraw</button>
                 </div>
               </div>
             ) : isConnected ? (
@@ -757,6 +759,7 @@ export default function VaultDetailPage({ params }: { params: { id: string } }) 
 
       <Toast message={toastMessage} visible={toastVisible} />
       <DepositModal isOpen={depositOpen} onClose={() => setDepositOpen(false)} vaultId={vault.id} onSuccess={() => showToast('Deposit successful!')} />
+      <WithdrawModal isOpen={withdrawOpen} onClose={() => setWithdrawOpen(false)} vaultId={vault.id} onSuccess={() => showToast('Withdrawal successful!')} />
     </div>
   );
 }
