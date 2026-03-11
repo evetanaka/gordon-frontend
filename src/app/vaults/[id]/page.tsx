@@ -5,6 +5,7 @@ import {
   ChevronDown, ExternalLink, Copy, Power, Activity, ArrowUpRight, ArrowLeft, ArrowRight,
   LayoutDashboard, Layers, Trophy, Coins, Check, Clock, AlertTriangle
 } from 'lucide-react';
+import { DepositModal } from '@/components/DepositModal';
 
 // --- HOOKS ---
 
@@ -344,6 +345,7 @@ export default function VaultDetailPage({ params }: { params: { id: string } }) 
   const [showAllPositions, setShowAllPositions] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
+  const [depositOpen, setDepositOpen] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   useOnClickOutside(dropdownRef, () => setDropdownOpen(false));
@@ -542,14 +544,14 @@ export default function VaultDetailPage({ params }: { params: { id: string } }) 
                   <span>Shares: {vault.userPosition.shares}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-3 max-w-xs">
-                  <button onClick={() => showToast('Coming soon')} className="py-2.5 bg-[#00FF66] text-black font-mono font-bold text-xs uppercase tracking-wider hover:bg-white transition-colors">Deposit More</button>
+                  <button onClick={() => setDepositOpen(true)} className="py-2.5 bg-[#00FF66] text-black font-mono font-bold text-xs uppercase tracking-wider hover:bg-white transition-colors">Deposit More</button>
                   <button onClick={() => showToast('Coming soon')} className="py-2.5 border border-[#333] text-white font-mono text-xs uppercase tracking-widest hover:border-[#00FF66] hover:text-[#00FF66] transition-colors">Withdraw</button>
                 </div>
               </div>
             ) : isConnected ? (
               <div className="bg-[#111] border border-[#333] p-6 mb-8 text-center">
                 <div className="font-mono text-xs text-[#6B6B6B] uppercase tracking-widest mb-3">No Position Yet</div>
-                <button onClick={() => showToast('Coming soon')} className="bg-[#00FF66] text-black font-mono font-bold text-xs px-6 py-3 uppercase tracking-wider hover:bg-white transition-colors inline-flex items-center gap-2">
+                <button onClick={() => setDepositOpen(true)} className="bg-[#00FF66] text-black font-mono font-bold text-xs px-6 py-3 uppercase tracking-wider hover:bg-white transition-colors inline-flex items-center gap-2">
                   Deposit <ArrowRight className="w-3 h-3" />
                 </button>
               </div>
@@ -754,6 +756,7 @@ export default function VaultDetailPage({ params }: { params: { id: string } }) 
       </main>
 
       <Toast message={toastMessage} visible={toastVisible} />
+      <DepositModal isOpen={depositOpen} onClose={() => setDepositOpen(false)} vaultId={vault.id} onSuccess={() => showToast('Deposit successful!')} />
     </div>
   );
 }

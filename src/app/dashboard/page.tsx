@@ -232,9 +232,9 @@ const PositionRow = ({ pos, index }: { pos: any; index: number }) => {
         {pos.since}
       </div>
       <div className="col-span-1 md:text-right mt-4 md:mt-0">
-        <button className="w-full md:w-auto text-xs font-mono text-[#6B6B6B] hover:text-[#00FF66] transition-colors uppercase tracking-widest flex justify-center md:justify-end items-center gap-1 group">
+        <a href={`/vaults/${pos.id}`} className="w-full md:w-auto text-xs font-mono text-[#6B6B6B] hover:text-[#00FF66] transition-colors uppercase tracking-widest flex justify-center md:justify-end items-center gap-1 group">
           [Manage <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />]
-        </button>
+        </a>
       </div>
     </div>
   );
@@ -286,8 +286,8 @@ export default function Dashboard() {
   }));
 
   const activePositions = [
-    { vault: 'Alpha Vault', tracked: 50, deposited: 8000, current: 9847, pnl: 1847, pnlPct: 23.1, since: '14 days' },
-    { vault: 'Degen Vault', tracked: 5, deposited: 4400, current: 5400, pnl: 1000, pnlPct: 22.7, since: '7 days' }
+    { vault: 'Alpha Vault', id: 'alpha', tracked: 50, deposited: 8000, current: 9847, pnl: 1847, pnlPct: 23.1, since: '14 days' },
+    { vault: 'Degen Vault', id: 'degen', tracked: 5, deposited: 4400, current: 5400, pnl: 1000, pnlPct: 22.7, since: '7 days' }
   ];
 
   const activityFeed = [

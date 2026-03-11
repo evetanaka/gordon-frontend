@@ -293,17 +293,17 @@ const VaultCardItem = ({ vault, index, isConnected, showToast }: {
           </button>
         ) : hasPosition ? (
           <div className="grid grid-cols-2 gap-3">
-            <button className="py-3 bg-[#00FF66] text-black font-mono font-bold text-xs uppercase tracking-wider hover:bg-white transition-colors">
+            <a href={`/vaults/${vault.id}`} className="py-3 bg-[#00FF66] text-black font-mono font-bold text-xs uppercase tracking-wider hover:bg-white transition-colors text-center">
               Deposit More
-            </button>
-            <button className="py-3 border border-[#333] text-white font-mono text-xs uppercase tracking-widest hover:border-[#00FF66] hover:text-[#00FF66] transition-colors">
+            </a>
+            <a href={`/vaults/${vault.id}`} className="py-3 border border-[#333] text-white font-mono text-xs uppercase tracking-widest hover:border-[#00FF66] hover:text-[#00FF66] transition-colors text-center">
               Manage
-            </button>
+            </a>
           </div>
         ) : (
-          <button className="w-full py-3 bg-[#00FF66] text-black font-mono font-bold text-xs uppercase tracking-wider hover:bg-white transition-colors flex items-center justify-center gap-2">
+          <a href={`/vaults/${vault.id}`} className="w-full py-3 bg-[#00FF66] text-black font-mono font-bold text-xs uppercase tracking-wider hover:bg-white transition-colors flex items-center justify-center gap-2">
             Deposit <ArrowRight className="w-3 h-3" />
-          </button>
+          </a>
         )}
       </div>
     </div>
