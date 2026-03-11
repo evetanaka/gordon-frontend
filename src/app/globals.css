@@ -12,3 +12,22 @@
   background: #00FF66;
   color: #0A0A0A;
 }
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes glitch-h {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(100%); }
+}
+
+.animate-glitch-h {
+  animation: glitch-h 3s linear infinite;
+}
