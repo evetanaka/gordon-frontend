@@ -1,12 +1,14 @@
 'use client'
 
-import { useReadContract, useWriteContract, useAccount } from 'wagmi'
+import { useReadContract, useWriteContract, useWaitForTransactionReceipt, useAccount } from 'wagmi'
 import { type Address, parseUnits } from 'viem'
 import VaultABI from '@/config/abis/GordonVaultETH.json'
 
 export function useVault(vaultAddress: Address) {
   const { address } = useAccount()
-  const { writeContract, isPending: isWritePending } = useWriteContract()
+  const { writeContract, isPending: isWritePending, data: txHash, error: writeError, reset } = useWriteContract()
+
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash: txHash })
 
   const totalAssets = useReadContract({
     address: vaultAddress,
@@ -36,6 +38,14 @@ export function useVault(vaultAddress: Address) {
     address: vaultAddress,
     abi: VaultABI,
     functionName: 'name',
+  })
+
+  const userShares = useReadContract({
+    address: vaultAddress,
+    abi: VaultABI,
+    functionName: 'shareBalanceOf',
+    args: address ? [address] : undefined,
+    query: { enabled: !!address },
   })
 
   const userPosition = useReadContract({
@@ -86,6 +96,7 @@ export function useVault(vaultAddress: Address) {
     sharePrice: sharePrice.data as bigint | undefined,
     freeAssets: freeAssets.data as bigint | undefined,
     name: name.data as string | undefined,
+    userShares: userShares.data as bigint | undefined,
     userPosition: userPosition.data as [bigint, bigint] | undefined,
     depositFeeBps: depositFeeBps.data as bigint | undefined,
     withdrawFeeBps: withdrawFeeBps.data as bigint | undefined,
@@ -93,6 +104,25 @@ export function useVault(vaultAddress: Address) {
     withdraw,
     isLoading,
     isWritePending,
+    isConfirming,
+    isConfirmed,
+    txHash,
+    writeError,
+    reset,
+    refetchUserShares: userShares.refetch,
+    refetchTotalAssets: totalAssets.refetch,
+    refetchUserPosition: userPosition.refetch,
     error: totalAssets.error || sharePrice.error,
   }
+}
+
+export function useConvertToAssets(vaultAddress: Address, shares: bigint | undefined) {
+  const result = useReadContract({
+    address: vaultAddress,
+    abi: VaultABI,
+    functionName: 'convertToAssets',
+    args: shares ? [shares] : undefined,
+    query: { enabled: !!shares && shares > BigInt(0) },
+  })
+  return result.data as bigint | undefined
 }

@@ -11,6 +11,48 @@ import {
 } from 'lucide-react';
 import { DepositModal } from '../../../components/DepositModal';
 import { WithdrawModal } from '../../../components/WithdrawModal';
+import { useVault, useConvertToAssets } from '@/hooks/useVault';
+import { useToken } from '@/hooks/useToken';
+import { useAccount } from 'wagmi';
+import { type Address, formatUnits } from 'viem';
+import { CONTRACTS } from '@/config/contracts';
+
+// --- VAULT ID → ADDRESS MAPPING ---
+
+const VAULT_MAP: Record<string, { address: Address; name: string; subtitle: string; tags: string[]; riskLevel: number; shareSymbol: string }> = {
+  crypto: {
+    address: CONTRACTS.CryptoVault as Address,
+    name: 'Crypto Vault',
+    subtitle: 'Top Crypto Traders · Diversified',
+    tags: ['CRYPTO', 'DIVERSIFIED', 'AUTO-COMPOUND'],
+    riskLevel: 3,
+    shareSymbol: 'gCRYPTO',
+  },
+  sport: {
+    address: CONTRACTS.SportVault as Address,
+    name: 'Sport Vault',
+    subtitle: 'Sports Prediction Markets',
+    tags: ['SPORTS', 'PREDICTION', 'MEDIUM RISK'],
+    riskLevel: 2,
+    shareSymbol: 'gSPORT',
+  },
+  finance: {
+    address: CONTRACTS.FinanceVault as Address,
+    name: 'Finance Vault',
+    subtitle: 'Financial Markets · Macro',
+    tags: ['FINANCE', 'MACRO', 'LOW RISK'],
+    riskLevel: 2,
+    shareSymbol: 'gFIN',
+  },
+  politic: {
+    address: CONTRACTS.PoliticVault as Address,
+    name: 'Politic Vault',
+    subtitle: 'Political Prediction Markets',
+    tags: ['POLITICS', 'HIGH CONVICTION', 'VOLATILE'],
+    riskLevel: 4,
+    shareSymbol: 'gPOL',
+  },
+};
 
 // --- HOOKS ---
 
@@ -28,27 +70,6 @@ const useScrollReveal = (options: { threshold?: number; delay?: number } = { thr
     return () => observer.disconnect();
   }, [options.delay, options.threshold]);
   return [ref, isVisible] as const;
-};
-
-const useCountUp = (end: number, duration = 2000, start = 0, decimals = 0, prefix = '', suffix = '') => {
-  const [count, setCount] = useState(start);
-  const [ref, isVisible] = useScrollReveal({ threshold: 0.5 });
-  useEffect(() => {
-    if (!isVisible) return;
-    let startTime: number | null = null;
-    const animate = (timestamp: number) => {
-      if (!startTime) startTime = timestamp;
-      const progress = timestamp - startTime;
-      const pct = Math.min(progress / duration, 1);
-      const ease = 1 - Math.pow(1 - pct, 5);
-      setCount(start + (end - start) * ease);
-      if (pct < 1) requestAnimationFrame(animate);
-      else setCount(end);
-    };
-    requestAnimationFrame(animate);
-  }, [isVisible, end, duration, start]);
-  const formatted = count.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  return [ref, `${prefix}${formatted}${suffix}`] as const;
 };
 
 const useOnClickOutside = (ref: React.RefObject<any>, handler: (e: any) => void) => {
@@ -227,110 +248,36 @@ const JsonTerminal = ({ vaultSlug, data }: { vaultSlug: string; data: Record<str
   );
 };
 
-// --- MOCK DATA ---
+// --- MOCK STRATEGY DATA (needs backend) ---
 
-const VAULTS: Record<string, any> = {
-  alpha: {
-    id: 'alpha', name: 'Alpha Vault', subtitle: 'Top 50 Traders · Diversified', status: 'live',
-    tags: ['DIVERSIFIED', 'AUTO-COMPOUND', 'BLUE CHIP'],
-    apy30d: 47.2, apyAllTime: 89.4, tvl: 2400000, depositors: 342,
-    maxDrawdown: -12.3, sharpeRatio: 2.41, winRate: 74.8, activeBets: 18, riskLevel: 2,
-    strategy: {
-      name: "Alpha Vault", version: "1.2.0", tracking: "top_50_wallets",
-      criteria: { min_win_rate: 0.65, min_roi_90d: 1.5, min_volume_30d: "$50K", min_history: "60_days" },
-      execution: { max_position_size: 0.05, max_single_market: 0.15, rebalance_interval: "4h", slippage_tolerance: 0.02 },
-      risk: { stop_loss: -0.15, max_drawdown: -0.20, circuit_breaker: true },
-      fees: { performance: 0.20, management: 0, deposit: 0, withdrawal: 0 },
-      compound: "auto"
-    },
-    userPosition: { deposited: 8000, currentValue: 9847, pnl: 1847, roi: 23.1, change24h: 2.4, since: '14 days ago', shares: '7,892 gALPHA' },
-    positions: [
-      { market: 'Trump wins 2026', side: 'YES', size: 420000, source: '0x71C...49A2', pnl: 12.4 },
-      { market: 'ETH > $5K by June', side: 'NO', size: 180000, source: '0x4B2...11F8', pnl: 8.1 },
-      { market: 'Fed cuts rates May', side: 'YES', size: 95000, source: '0x99A...CC42', pnl: 3.2 },
-      { market: 'BTC > $150K Q2', side: 'YES', size: 74000, source: '0x71C...49A2', pnl: -2.1 },
-      { market: 'SOL flips ETH', side: 'NO', size: 62000, source: '0x3D1...7E90', pnl: 5.7 },
-      { market: 'Vitalik resigns', side: 'NO', size: 41000, source: '0x4B2...11F8', pnl: 18.3 },
-      { market: 'US recession 2026', side: 'YES', size: 38000, source: '0x99A...CC42', pnl: 1.4 },
-      { market: 'OpenAI IPO Q2', side: 'YES', size: 29000, source: '0xF82...3A01', pnl: -0.8 },
-      { market: 'Apple buys Disney', side: 'NO', size: 22000, source: '0x71C...49A2', pnl: 4.2 },
-      { market: 'Bitcoin ETF 2x inflows', side: 'YES', size: 18000, source: '0x3D1...7E90', pnl: 6.1 },
-    ],
-    trades: [
-      { time: '2m ago', action: 'BUY', side: 'YES', market: 'Trump wins 2026', source: '0x71C...', amount: 42000 },
-      { time: '15m ago', action: 'SELL', side: 'NO', market: 'ETH > $5K by June', source: '0x4B2...', amount: 18000 },
-      { time: '1h ago', action: 'BUY', side: 'YES', market: 'Fed cuts rates May', source: '0x99A...', amount: 12000 },
-      { time: '3h ago', action: 'BUY', side: 'NO', market: 'SOL flips ETH', source: '0x3D1...', amount: 8400 },
-      { time: '6h ago', action: 'SELL', side: 'YES', market: 'BTC > $150K Q2', source: '0x71C...', amount: 22000 },
-    ],
-    wallets: [
-      { address: '0x71C7...49A2', rank: 1, winRate: 84.2, roi90d: 247, followedSince: '47 days', signalShare: 32, volume: '$2.1M', topMarkets: ['Trump wins', 'ETH > $5K', 'Fed rates'] },
-      { address: '0x4B27...11F8', rank: 2, winRate: 79.1, roi90d: 189, followedSince: '35 days', signalShare: 24, volume: '$1.6M', topMarkets: ['Vitalik resigns', 'ETH > $5K'] },
-      { address: '0x99A3...CC42', rank: 3, winRate: 77.8, roi90d: 156, followedSince: '28 days', signalShare: 18, volume: '$980K', topMarkets: ['Fed rates', 'US recession'] },
-    ],
+const STRATEGY_DATA: Record<string, any> = {
+  crypto: {
+    name: "Crypto Vault", version: "1.0.0", tracking: "top_50_crypto_traders",
+    criteria: { min_win_rate: 0.65, min_roi_90d: 1.5, min_volume_30d: "$50K" },
+    execution: { max_position_size: 0.05, rebalance_interval: "4h" },
+    risk: { stop_loss: -0.15, max_drawdown: -0.20, circuit_breaker: true },
+    fees: { performance: 0.20, deposit: "on-chain", withdrawal: "on-chain" },
   },
-  degen: {
-    id: 'degen', name: 'Degen Vault', subtitle: 'Top 5 Whales · High Conviction', status: 'live',
-    tags: ['HIGH RISK', 'WHALE TRACK', 'CONCENTRATED'],
-    apy30d: 89.1, apyAllTime: 214.7, tvl: 890000, depositors: 89,
-    maxDrawdown: -38.2, sharpeRatio: 1.62, winRate: 68.4, activeBets: 7, riskLevel: 4,
-    strategy: {
-      name: "Degen Vault", version: "2.0.1", tracking: "top_5_whales",
-      criteria: { min_win_rate: 0.60, min_roi_90d: 3.0, min_volume_30d: "$500K", min_history: "90_days" },
-      execution: { max_position_size: 0.20, max_single_market: 0.40, rebalance_interval: "1h", slippage_tolerance: 0.05 },
-      risk: { stop_loss: -0.30, max_drawdown: -0.45, circuit_breaker: true },
-      fees: { performance: 0.20, management: 0, deposit: 0, withdrawal: 0 },
-      compound: "auto"
-    },
-    userPosition: { deposited: 4400, currentValue: 5400, pnl: 1000, roi: 22.7, change24h: -1.2, since: '7 days ago', shares: '4,180 gDEGEN' },
-    positions: [
-      { market: 'BTC > $200K 2026', side: 'YES', size: 280000, source: '0xA1F...88D3', pnl: 28.4 },
-      { market: 'ETH flippening', side: 'YES', size: 190000, source: '0xB3C...22E1', pnl: -8.7 },
-      { market: 'Solana > $500', side: 'YES', size: 140000, source: '0xA1F...88D3', pnl: 15.2 },
-      { market: 'Fed emergency cut', side: 'NO', size: 95000, source: '0xD4E...9F27', pnl: 6.1 },
-      { market: 'DOGE > $1', side: 'YES', size: 72000, source: '0xB3C...22E1', pnl: -12.3 },
-    ],
-    trades: [
-      { time: '5m ago', action: 'BUY', side: 'YES', market: 'BTC > $200K 2026', source: '0xA1F...', amount: 85000 },
-      { time: '42m ago', action: 'SELL', side: 'YES', market: 'ETH flippening', source: '0xB3C...', amount: 44000 },
-      { time: '2h ago', action: 'BUY', side: 'NO', market: 'Fed emergency cut', source: '0xD4E...', amount: 32000 },
-      { time: '8h ago', action: 'BUY', side: 'YES', market: 'DOGE > $1', source: '0xB3C...', amount: 72000 },
-    ],
-    wallets: [
-      { address: '0xA1F9...88D3', rank: 1, winRate: 72.4, roi90d: 412, followedSince: '62 days', signalShare: 38, volume: '$8.4M', topMarkets: ['BTC > $200K', 'Solana > $500'] },
-      { address: '0xB3C2...22E1', rank: 2, winRate: 69.8, roi90d: 287, followedSince: '45 days', signalShare: 28, volume: '$5.1M', topMarkets: ['ETH flippening', 'DOGE > $1'] },
-      { address: '0xD4E7...9F27', rank: 3, winRate: 71.2, roi90d: 198, followedSince: '30 days', signalShare: 22, volume: '$3.2M', topMarkets: ['Fed emergency cut', 'Rate hike'] },
-    ],
+  sport: {
+    name: "Sport Vault", version: "1.0.0", tracking: "sports_prediction_markets",
+    criteria: { min_win_rate: 0.60, focus: "major_leagues" },
+    execution: { max_position_size: 0.08, rebalance_interval: "6h" },
+    risk: { stop_loss: -0.20, max_drawdown: -0.25, circuit_breaker: true },
+    fees: { performance: 0.20, deposit: "on-chain", withdrawal: "on-chain" },
   },
-  stable: {
-    id: 'stable', name: 'Stable Vault', subtitle: 'Market Neutral · Low Volatility', status: 'soon',
-    tags: ['LOW RISK', 'DELTA NEUTRAL', 'STABLE'],
-    apy30d: 12.5, apyAllTime: 0, tvl: 0, depositors: 0,
-    maxDrawdown: 0, sharpeRatio: 0, winRate: 0, activeBets: 0, riskLevel: 1,
-    strategy: {
-      name: "Stable Vault", version: "0.1.0-beta", tracking: "top_100_delta_neutral",
-      criteria: { min_win_rate: 0.70, max_volatility: 0.05, strategy_type: "market_neutral" },
-      execution: { max_position_size: 0.02, hedge_ratio: 0.95, rebalance_interval: "2h" },
-      risk: { stop_loss: -0.05, max_drawdown: -0.08, circuit_breaker: true },
-      fees: { performance: 0.15, management: 0, deposit: 0, withdrawal: 0 },
-      compound: "auto", status: "coming_soon"
-    },
-    userPosition: null, positions: [], trades: [], wallets: [],
+  finance: {
+    name: "Finance Vault", version: "1.0.0", tracking: "macro_financial_markets",
+    criteria: { min_win_rate: 0.70, strategy_type: "macro_neutral" },
+    execution: { max_position_size: 0.04, rebalance_interval: "2h" },
+    risk: { stop_loss: -0.10, max_drawdown: -0.15, circuit_breaker: true },
+    fees: { performance: 0.20, deposit: "on-chain", withdrawal: "on-chain" },
   },
-  momentum: {
-    id: 'momentum', name: 'Momentum Vault', subtitle: 'Trend Following · Multi-Market', status: 'soon',
-    tags: ['TREND', 'MULTI-MARKET', 'MOMENTUM'],
-    apy30d: 63.8, apyAllTime: 0, tvl: 0, depositors: 0,
-    maxDrawdown: 0, sharpeRatio: 0, winRate: 0, activeBets: 0, riskLevel: 3,
-    strategy: {
-      name: "Momentum Vault", version: "0.2.0-beta", tracking: "top_20_trend_followers",
-      criteria: { min_win_rate: 0.60, momentum_window: "7d", min_roi_30d: 0.5 },
-      execution: { max_position_size: 0.08, trend_confirmation: "2_sources", rebalance_interval: "6h" },
-      risk: { stop_loss: -0.20, max_drawdown: -0.30, circuit_breaker: true },
-      fees: { performance: 0.20, management: 0, deposit: 0, withdrawal: 0 },
-      compound: "auto", status: "coming_soon"
-    },
-    userPosition: null, positions: [], trades: [], wallets: [],
+  politic: {
+    name: "Politic Vault", version: "1.0.0", tracking: "political_prediction_markets",
+    criteria: { min_win_rate: 0.55, high_conviction: true },
+    execution: { max_position_size: 0.15, rebalance_interval: "12h" },
+    risk: { stop_loss: -0.30, max_drawdown: -0.40, circuit_breaker: true },
+    fees: { performance: 0.20, deposit: "on-chain", withdrawal: "on-chain" },
   },
 };
 
@@ -341,20 +288,19 @@ const genChartData = (base: number, volatility: number, trend: number, days: num
 // --- MAIN ---
 
 export default function VaultDetailPage({ params }: { params: { id: string } }) {
-  const vault = VAULTS[params.id];
+  const vaultConfig = VAULT_MAP[params.id];
+  const { address, isConnected } = useAccount();
 
-  const [isConnected, setIsConnected] = useState(true);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const vaultAddress = vaultConfig?.address || ('0x0000000000000000000000000000000000000000' as Address);
+  const vault = useVault(vaultAddress);
+  const { balance: usdcBalance } = useToken('USDC');
+  const userAssetsValue = useConvertToAssets(vaultAddress, vault.userShares);
+
   const [chartPeriod, setChartPeriod] = useState('30D');
-  const [showAllPositions, setShowAllPositions] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
   const [depositOpen, setDepositOpen] = useState(false);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
-
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  useOnClickOutside(dropdownRef, () => setDropdownOpen(false));
-
 
   const showToast = useCallback((msg: string) => {
     setToastMessage(msg);
@@ -362,12 +308,12 @@ export default function VaultDetailPage({ params }: { params: { id: string } }) 
     setTimeout(() => setToastVisible(false), 3000);
   }, []);
 
-  // Chart data
+  // Chart data (mock — needs backend)
   const days = chartPeriod === '7D' ? 7 : chartPeriod === '30D' ? 30 : chartPeriod === '90D' ? 90 : 180;
   const vaultChart = genChartData(10000, 400, 80, days);
   const benchChart = genChartData(10000, 200, 30, days);
 
-  if (!vault) {
+  if (!vaultConfig) {
     return (
       <div className="min-h-screen bg-[#0A0A0A] text-white flex items-center justify-center">
         <div className="text-center">
@@ -378,10 +324,35 @@ export default function VaultDetailPage({ params }: { params: { id: string } }) 
     );
   }
 
-  const isSoon = vault.status === 'soon';
-  const hasPosition = isConnected && vault.userPosition;
-  const visiblePositions = showAllPositions ? vault.positions : vault.positions.slice(0, 8);
-  const medals = ['🥇', '🥈', '🥉'];
+  // Format on-chain values
+  const tvl = vault.totalAssets ? parseFloat(formatUnits(vault.totalAssets, 6)) : 0;
+  const userSharesNum = vault.userShares ? parseFloat(formatUnits(vault.userShares, 6)) : 0;
+  const userValueNum = userAssetsValue ? parseFloat(formatUnits(userAssetsValue, 6)) : 0;
+  const usdcBalanceNum = usdcBalance ? parseFloat(formatUnits(usdcBalance, 6)) : 0;
+  const depositFeePct = vault.depositFeeBps ? Number(vault.depositFeeBps) / 100 : 0;
+  const withdrawFeePct = vault.withdrawFeeBps ? Number(vault.withdrawFeeBps) / 100 : 0;
+  const sharePriceNum = vault.sharePrice ? parseFloat(formatUnits(vault.sharePrice, 6)) : 1;
+  const hasPosition = isConnected && userSharesNum > 0;
+
+  const formatUSD = (n: number) => {
+    if (n >= 1000000) return `$${(n / 1000000).toFixed(2)}M`;
+    if (n >= 1000) return `$${(n / 1000).toFixed(1)}K`;
+    return `$${n.toFixed(2)}`;
+  };
+
+  const handleDepositSuccess = () => {
+    showToast('Deposit successful!');
+    vault.refetchUserShares();
+    vault.refetchTotalAssets();
+    vault.refetchUserPosition();
+  };
+
+  const handleWithdrawSuccess = () => {
+    showToast('Withdrawal successful!');
+    vault.refetchUserShares();
+    vault.refetchTotalAssets();
+    vault.refetchUserPosition();
+  };
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white font-sans selection:bg-[#00FF66] selection:text-black pb-24 md:pb-12">
@@ -402,7 +373,6 @@ export default function VaultDetailPage({ params }: { params: { id: string } }) 
       <Navbar />
       <MobileNav />
 
-      {/* MAIN */}
       <main className="max-w-5xl mx-auto px-4 md:px-6 pt-24 pb-12 md:pb-24">
 
         {/* BACK LINK */}
@@ -411,303 +381,126 @@ export default function VaultDetailPage({ params }: { params: { id: string } }) 
         </Link>
 
         {/* HERO HEADER */}
-        <div className={`mb-8 ${isSoon ? 'opacity-70' : ''}`}>
+        <div className="mb-8">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <h1 className="font-sans font-bold text-2xl md:text-3xl text-white">{vault.name}</h1>
-                {isSoon ? (
-                  <span className="font-mono text-[10px] px-2 py-0.5 bg-[#333] text-[#6B6B6B] uppercase tracking-widest">SOON</span>
-                ) : (
-                  <span className="font-mono text-[10px] px-2 py-0.5 bg-[#00FF66]/10 text-[#00FF66] uppercase tracking-widest flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#00FF66] animate-pulse" /> LIVE
-                  </span>
-                )}
+                <h1 className="font-sans font-bold text-2xl md:text-3xl text-white">{vaultConfig.name}</h1>
+                <span className="font-mono text-[10px] px-2 py-0.5 bg-[#00FF66]/10 text-[#00FF66] uppercase tracking-widest flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#00FF66] animate-pulse" /> LIVE
+                </span>
               </div>
-              <div className="font-mono text-xs text-[#6B6B6B] uppercase tracking-widest mb-3">{vault.subtitle}</div>
+              <div className="font-mono text-xs text-[#6B6B6B] uppercase tracking-widest mb-3">{vaultConfig.subtitle}</div>
               <div className="flex flex-wrap gap-1.5">
-                {vault.tags.map((tag: string) => (
+                {vaultConfig.tags.map((tag: string) => (
                   <span key={tag} className="font-mono text-[9px] px-2 py-0.5 border border-[#333] text-[#6B6B6B] uppercase tracking-widest">{tag}</span>
                 ))}
               </div>
             </div>
-            {!isSoon && (
-              <div className="text-left md:text-right">
-                <div className="font-sans font-bold text-4xl text-[#00FF66]">{vault.apy30d}%</div>
-                <div className="font-mono text-[10px] text-[#6B6B6B] uppercase tracking-widest">30D APY</div>
-              </div>
-            )}
+            <div className="text-left md:text-right">
+              <div className="font-mono text-[10px] text-[#6B6B6B] uppercase tracking-widest mb-1">Share Price</div>
+              <div className="font-sans font-bold text-2xl text-[#00FF66]">${sharePriceNum.toFixed(4)}</div>
+            </div>
           </div>
         </div>
 
-        {/* SOON STATE */}
-        {isSoon ? (
-          <>
-            <div className="bg-[#111] border border-[#333] p-8 text-center mb-12">
-              <Clock className="w-8 h-8 text-[#6B6B6B] mx-auto mb-4" />
-              <div className="font-mono text-xs text-[#6B6B6B] uppercase tracking-widest mb-2">Coming Soon</div>
-              <p className="text-[#E0E0E0] text-sm max-w-md mx-auto mb-6">This vault is currently in development. Join the waitlist to be notified when it goes live.</p>
-              <button onClick={() => showToast('Added to waitlist')} className="bg-[#00FF66] text-black font-mono font-bold text-xs px-6 py-3 uppercase tracking-wider hover:bg-white transition-colors">
-                Join Waitlist
-              </button>
+        {/* YOUR POSITION / CONNECT CTA */}
+        {hasPosition ? (
+          <div className="bg-[#111] border border-[#333] border-l-2 border-l-[#00FF66] p-5 mb-8">
+            <div className="font-mono text-[10px] text-[#00FF66] uppercase tracking-widest mb-4">YOUR POSITION</div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div>
+                <div className="font-mono text-[9px] text-[#6B6B6B] uppercase tracking-widest mb-1">Shares</div>
+                <div className="font-mono text-lg text-white">{userSharesNum.toFixed(2)}</div>
+              </div>
+              <div>
+                <div className="font-mono text-[9px] text-[#6B6B6B] uppercase tracking-widest mb-1">Value (USDC)</div>
+                <div className="font-mono text-lg text-white">{formatUSD(userValueNum)}</div>
+              </div>
+              <div>
+                <div className="font-mono text-[9px] text-[#6B6B6B] uppercase tracking-widest mb-1">USDC Balance</div>
+                <div className="font-mono text-lg text-white">{formatUSD(usdcBalanceNum)}</div>
+              </div>
+              <div>
+                <div className="font-mono text-[9px] text-[#6B6B6B] uppercase tracking-widest mb-1">Risk Level</div>
+                <RiskBar level={vaultConfig.riskLevel} />
+              </div>
             </div>
-
-            <SectionHeader title="STRATEGY (PREVIEW)" />
-            <div className="mb-12">
-              <JsonTerminal vaultSlug={vault.id} data={vault.strategy} />
+            <div className="grid grid-cols-2 gap-3 max-w-xs">
+              <button onClick={() => setDepositOpen(true)} className="py-2.5 bg-[#00FF66] text-black font-mono font-bold text-xs uppercase tracking-wider hover:bg-white transition-colors">Deposit More</button>
+              <button onClick={() => setWithdrawOpen(true)} className="py-2.5 border border-[#333] text-white font-mono text-xs uppercase tracking-widest hover:border-[#00FF66] hover:text-[#00FF66] transition-colors">Withdraw</button>
             </div>
-          </>
-        ) : (
-          <>
-            {/* YOUR POSITION / CONNECT CTA */}
-            {hasPosition ? (
-              <div className="bg-[#111] border border-[#333] border-l-2 border-l-[#00FF66] p-5 mb-8">
-                <div className="font-mono text-[10px] text-[#00FF66] uppercase tracking-widest mb-4">YOUR POSITION</div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                  <div>
-                    <div className="font-mono text-[9px] text-[#6B6B6B] uppercase tracking-widest mb-1">Deposited</div>
-                    <div className="font-mono text-lg text-white">${vault.userPosition.deposited.toLocaleString()}</div>
-                  </div>
-                  <div>
-                    <div className="font-mono text-[9px] text-[#6B6B6B] uppercase tracking-widest mb-1">Current Value</div>
-                    <div className="font-mono text-lg text-white">${vault.userPosition.currentValue.toLocaleString()}</div>
-                  </div>
-                  <div>
-                    <div className="font-mono text-[9px] text-[#6B6B6B] uppercase tracking-widest mb-1">PNL</div>
-                    <div className={`font-mono text-lg ${vault.userPosition.pnl >= 0 ? 'text-[#00FF66]' : 'text-[#FF3B3B]'}`}>
-                      {vault.userPosition.pnl >= 0 ? '+' : ''}${vault.userPosition.pnl.toLocaleString()}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="font-mono text-[9px] text-[#6B6B6B] uppercase tracking-widest mb-1">ROI</div>
-                    <div className={`font-mono text-lg ${vault.userPosition.roi >= 0 ? 'text-[#00FF66]' : 'text-[#FF3B3B]'}`}>
-                      +{vault.userPosition.roi}%
-                    </div>
-                    <div className={`font-mono text-[10px] ${vault.userPosition.change24h >= 0 ? 'text-[#00FF66]' : 'text-[#FF3B3B]'}`}>
-                      {vault.userPosition.change24h >= 0 ? '▲' : '▼'} {Math.abs(vault.userPosition.change24h)}% (24h)
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4 text-[#6B6B6B] font-mono text-[10px] mb-4">
-                  <span>Since: {vault.userPosition.since}</span>
-                  <span>·</span>
-                  <span>Shares: {vault.userPosition.shares}</span>
-                </div>
-                <div className="grid grid-cols-2 gap-3 max-w-xs">
-                  <button onClick={() => setDepositOpen(true)} className="py-2.5 bg-[#00FF66] text-black font-mono font-bold text-xs uppercase tracking-wider hover:bg-white transition-colors">Deposit More</button>
-                  <button onClick={() => setWithdrawOpen(true)} className="py-2.5 border border-[#333] text-white font-mono text-xs uppercase tracking-widest hover:border-[#00FF66] hover:text-[#00FF66] transition-colors">Withdraw</button>
-                </div>
-              </div>
-            ) : isConnected ? (
-              <div className="bg-[#111] border border-[#333] p-6 mb-8 text-center">
-                <div className="font-mono text-xs text-[#6B6B6B] uppercase tracking-widest mb-3">No Position Yet</div>
-                <button onClick={() => setDepositOpen(true)} className="bg-[#00FF66] text-black font-mono font-bold text-xs px-6 py-3 uppercase tracking-wider hover:bg-white transition-colors inline-flex items-center gap-2">
-                  Deposit <ArrowRight className="w-3 h-3" />
-                </button>
-              </div>
-            ) : (
-              <div className="bg-[#111] border border-[#333] p-6 mb-8 text-center">
-                <div className="font-mono text-xs text-[#6B6B6B] uppercase tracking-widest mb-3">Connect wallet to deposit</div>
-                <button onClick={() => setIsConnected(true)} className="bg-[#00FF66] text-black font-mono font-bold text-xs px-6 py-3 uppercase tracking-wider hover:bg-white transition-colors">
-                  Connect Wallet
-                </button>
-              </div>
+          </div>
+        ) : isConnected ? (
+          <div className="bg-[#111] border border-[#333] p-6 mb-8 text-center">
+            <div className="font-mono text-xs text-[#6B6B6B] uppercase tracking-widest mb-2">No Position Yet</div>
+            {usdcBalanceNum > 0 && (
+              <div className="font-mono text-[10px] text-[#6B6B6B] mb-3">Wallet: {formatUSD(usdcBalanceNum)} USDC</div>
             )}
-
-            {/* VAULT STATS */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-12">
-              {[
-                { label: 'Total TVL', value: `$${(vault.tvl / 1000000).toFixed(1)}M` },
-                { label: 'Depositors', value: vault.depositors.toString() },
-                { label: '30D APY', value: `+${vault.apy30d}%`, color: 'text-[#00FF66]' },
-                { label: 'All-time APY', value: `+${vault.apyAllTime}%`, color: 'text-[#00FF66]' },
-                { label: 'Max Drawdown', value: `${vault.maxDrawdown}%`, color: 'text-[#FF3B3B]' },
-                { label: 'Sharpe Ratio', value: vault.sharpeRatio.toFixed(2) },
-                { label: 'Win Rate', value: `${vault.winRate}%` },
-                { label: 'Active Bets', value: vault.activeBets.toString() },
-              ].map((stat, i) => (
-                <div key={stat.label} className="bg-[#111] border border-[#333] p-4 hover:border-[#6B6B6B] transition-colors">
-                  <div className="font-mono text-[9px] text-[#6B6B6B] uppercase tracking-widest mb-2">{stat.label}</div>
-                  <div className={`font-sans font-bold text-lg ${stat.color || 'text-white'}`}>{stat.value}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* STRATEGY */}
-            <SectionHeader title="STRATEGY" />
-            <div className="mb-12">
-              <JsonTerminal vaultSlug={vault.id} data={vault.strategy} />
-            </div>
-
-            {/* PERFORMANCE */}
-            <SectionHeader title="PERFORMANCE" />
-            <div className="bg-[#111] border border-[#333] p-4 mb-12">
-              <div className="flex justify-end gap-2 mb-4 font-mono text-[10px] uppercase tracking-widest">
-                {['7D', '30D', '90D', 'ALL'].map(p => (
-                  <button key={p} onClick={() => setChartPeriod(p)} className={`px-3 py-1 transition-colors ${chartPeriod === p ? 'bg-[#333] text-white' : 'text-[#6B6B6B] hover:text-white'}`}>
-                    [{p}]
-                  </button>
-                ))}
-              </div>
-              <PerformanceChart data={vaultChart} benchmarkData={benchChart} />
-            </div>
-
-            {/* CURRENT POSITIONS */}
-            <SectionHeader title="CURRENT POSITIONS" />
-            <div className="mb-12">
-              {/* Desktop table */}
-              <div className="hidden md:block bg-[#111] border border-[#333]">
-                <div className="grid grid-cols-12 gap-4 px-4 py-3 border-b border-[#333] font-mono text-[10px] text-[#6B6B6B] uppercase tracking-widest">
-                  <div className="col-span-4">Market</div>
-                  <div className="col-span-1">Side</div>
-                  <div className="col-span-2 text-right">Size</div>
-                  <div className="col-span-3">Source</div>
-                  <div className="col-span-2 text-right">PNL</div>
-                </div>
-                {visiblePositions.map((pos: any, i: number) => (
-                  <div key={i} className="grid grid-cols-12 gap-4 px-4 py-3 border-b border-[#222] hover:bg-[#222]/50 transition-colors items-center">
-                    <div className="col-span-4 text-white text-sm">&ldquo;{pos.market}&rdquo;</div>
-                    <div className="col-span-1">
-                      <span className={`font-mono text-[10px] px-1.5 py-0.5 ${pos.side === 'YES' ? 'bg-[#00FF66]/10 text-[#00FF66]' : 'bg-[#FF3B3B]/10 text-[#FF3B3B]'}`}>{pos.side}</span>
-                    </div>
-                    <div className="col-span-2 text-right font-mono text-sm text-white">${(pos.size / 1000).toFixed(0)}K</div>
-                    <div className="col-span-3">
-                      <button onClick={() => { navigator.clipboard.writeText(pos.source); showToast('Address copied'); }} className="font-mono text-xs text-[#6B6B6B] hover:text-[#00FF66] transition-colors">{pos.source}</button>
-                    </div>
-                    <div className={`col-span-2 text-right font-mono text-sm ${pos.pnl >= 0 ? 'text-[#00FF66]' : 'text-[#FF3B3B]'}`}>
-                      {pos.pnl >= 0 ? '+' : ''}{pos.pnl}%
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {/* Mobile cards */}
-              <div className="md:hidden flex flex-col gap-3">
-                {visiblePositions.map((pos: any, i: number) => (
-                  <div key={i} className="bg-[#111] border border-[#333] p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="text-white text-sm">&ldquo;{pos.market}&rdquo;</div>
-                      <div className={`font-mono text-sm font-bold ${pos.pnl >= 0 ? 'text-[#00FF66]' : 'text-[#FF3B3B]'}`}>
-                        {pos.pnl >= 0 ? '+' : ''}{pos.pnl}%
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 font-mono text-xs text-[#6B6B6B]">
-                      <span className={`px-1.5 py-0.5 ${pos.side === 'YES' ? 'bg-[#00FF66]/10 text-[#00FF66]' : 'bg-[#FF3B3B]/10 text-[#FF3B3B]'}`}>{pos.side}</span>
-                      <span>${(pos.size / 1000).toFixed(0)}K</span>
-                      <span>·</span>
-                      <span>{pos.source}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {vault.positions.length > 8 && (
-                <div className="text-center mt-4">
-                  <button onClick={() => setShowAllPositions(!showAllPositions)} className="font-mono text-xs text-[#6B6B6B] hover:text-[#00FF66] uppercase tracking-widest transition-colors">
-                    [{showAllPositions ? 'Show Less' : `Load More (${vault.positions.length - 8} remaining)`}]
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* RECENT TRADES */}
-            <SectionHeader title="RECENT TRADES" />
-            <div className="bg-[#111] border border-[#333] mb-12">
-              <div className="px-4 py-2 border-b border-[#333] flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#00FF66] animate-pulse" />
-                <span className="font-mono text-[10px] text-[#6B6B6B] uppercase tracking-widest">Live · updates every 30s</span>
-              </div>
-              {vault.trades.map((trade: any, i: number) => {
-                const isRecent = trade.time.includes('m ago') && parseInt(trade.time) < 5;
-                return (
-                  <div key={i} className="flex items-center gap-4 px-4 py-3 border-b border-[#222] hover:bg-[#222]/50 transition-colors font-mono text-xs">
-                    <div className="flex items-center gap-2 w-20 shrink-0">
-                      <span className={`w-1.5 h-1.5 rounded-full ${isRecent ? 'bg-[#00FF66] animate-pulse' : 'bg-[#333]'}`} />
-                      <span className="text-[#6B6B6B]">{trade.time}</span>
-                    </div>
-                    <div className="w-20 shrink-0">
-                      <span className={trade.action === 'BUY' ? 'text-[#00FF66]' : 'text-[#FF3B3B]'}>{trade.action}</span>
-                      {' '}
-                      <span className={trade.side === 'YES' ? 'text-[#00FF66]' : 'text-[#FF3B3B]'}>{trade.side}</span>
-                    </div>
-                    <div className="flex-1 text-white truncate">&ldquo;{trade.market}&rdquo;</div>
-                    <div className="text-[#6B6B6B] hidden md:block w-20 shrink-0">{trade.source}</div>
-                    <div className="text-white w-16 shrink-0 text-right">${(trade.amount / 1000).toFixed(0)}K</div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* TOP TRACKED WALLETS */}
-            <SectionHeader title="TOP TRACKED WALLETS" />
-            <div className="flex flex-col gap-4 mb-8">
-              {vault.wallets.map((wallet: any, i: number) => (
-                <div key={i} className="bg-[#111] border border-[#333] p-5 hover:border-[#6B6B6B] transition-colors">
-                  <div className="flex justify-between items-center mb-4">
-                    <div className="flex items-center gap-3">
-                      <span className="text-lg">{medals[i] || `#${wallet.rank}`}</span>
-                      <span className="font-mono text-sm text-white">{wallet.address}</span>
-                    </div>
-                    <button onClick={() => showToast('Coming soon')} className="font-mono text-[10px] text-[#6B6B6B] hover:text-[#00FF66] uppercase tracking-widest transition-colors flex items-center gap-1">
-                      View <ArrowRight className="w-3 h-3" />
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
-                    <div>
-                      <div className="font-mono text-[9px] text-[#6B6B6B] uppercase tracking-widest mb-1">Win Rate</div>
-                      <div className="font-mono text-sm text-white">{wallet.winRate}%</div>
-                    </div>
-                    <div>
-                      <div className="font-mono text-[9px] text-[#6B6B6B] uppercase tracking-widest mb-1">ROI 90D</div>
-                      <div className="font-mono text-sm text-[#00FF66]">+{wallet.roi90d}%</div>
-                    </div>
-                    <div>
-                      <div className="font-mono text-[9px] text-[#6B6B6B] uppercase tracking-widest mb-1">Followed</div>
-                      <div className="font-mono text-sm text-white">{wallet.followedSince}</div>
-                    </div>
-                    <div>
-                      <div className="font-mono text-[9px] text-[#6B6B6B] uppercase tracking-widest mb-1">Signals</div>
-                      <div className="font-mono text-sm text-white">{wallet.signalShare}%</div>
-                    </div>
-                    <div>
-                      <div className="font-mono text-[9px] text-[#6B6B6B] uppercase tracking-widest mb-1">Volume</div>
-                      <div className="font-mono text-sm text-white">{wallet.volume}</div>
-                    </div>
-                  </div>
-                  {/* Signal share bar */}
-                  <div className="mb-3">
-                    <div className="w-full h-1.5 bg-[#222] overflow-hidden">
-                      <div className="h-full bg-[#00FF66]" style={{ width: `${wallet.signalShare}%` }} />
-                    </div>
-                    <div className="font-mono text-[9px] text-[#6B6B6B] mt-1">{wallet.signalShare}% of vault signals</div>
-                  </div>
-                  {/* Top markets */}
-                  <div className="flex flex-wrap gap-1.5">
-                    {wallet.topMarkets.map((m: string) => (
-                      <span key={m} className="font-mono text-[9px] px-2 py-0.5 border border-[#333] text-[#6B6B6B]">{m}</span>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="text-center mb-12">
-              <button onClick={() => showToast('Coming soon')} className="font-mono text-xs text-[#6B6B6B] hover:text-[#00FF66] uppercase tracking-widest transition-colors">
-                [View All {vault.id === 'alpha' ? '50' : '5'} Tracked Wallets]
-              </button>
-            </div>
-
-            {/* RISK DISCLAIMER */}
-            <div className="bg-[#111] border border-[#333] border-l-2 border-l-yellow-500 p-4 flex items-start gap-3">
-              <AlertTriangle className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
-              <p className="font-mono text-xs text-[#6B6B6B] leading-relaxed">
-                Past performance does not guarantee future results. Prediction markets are volatile and carry significant risk. Never deposit more than you can afford to lose. Gordon.fi does not provide financial advice.
-              </p>
-            </div>
-          </>
+            <button onClick={() => setDepositOpen(true)} className="bg-[#00FF66] text-black font-mono font-bold text-xs px-6 py-3 uppercase tracking-wider hover:bg-white transition-colors inline-flex items-center gap-2">
+              Deposit <ArrowRight className="w-3 h-3" />
+            </button>
+          </div>
+        ) : (
+          <div className="bg-[#111] border border-[#333] p-6 mb-8 text-center">
+            <div className="font-mono text-xs text-[#6B6B6B] uppercase tracking-widest mb-3">Connect wallet to deposit</div>
+            <ConnectButton />
+          </div>
         )}
+
+        {/* VAULT STATS */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-12">
+          {[
+            { label: 'Total TVL', value: formatUSD(tvl) },
+            { label: 'Share Price', value: `$${sharePriceNum.toFixed(4)}` },
+            { label: 'Deposit Fee', value: `${depositFeePct.toFixed(2)}%` },
+            { label: 'Withdrawal Fee', value: `${withdrawFeePct.toFixed(2)}%` },
+            { label: 'Risk Level', value: `${vaultConfig.riskLevel}/5` },
+            { label: 'Vault Contract', value: `${vaultAddress.slice(0, 6)}...${vaultAddress.slice(-4)}`, color: 'text-[#6B6B6B]' },
+            { label: '30D APY', value: 'TBD', color: 'text-[#6B6B6B]' },
+            { label: 'All-time APY', value: 'TBD', color: 'text-[#6B6B6B]' },
+          ].map((stat) => (
+            <div key={stat.label} className="bg-[#111] border border-[#333] p-4 hover:border-[#6B6B6B] transition-colors">
+              <div className="font-mono text-[9px] text-[#6B6B6B] uppercase tracking-widest mb-2">{stat.label}</div>
+              <div className={`font-sans font-bold text-lg ${stat.color || 'text-white'}`}>{stat.value}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* STRATEGY */}
+        <SectionHeader title="STRATEGY" />
+        <div className="mb-12">
+          <JsonTerminal vaultSlug={params.id} data={STRATEGY_DATA[params.id] || {}} />
+        </div>
+
+        {/* PERFORMANCE (mock) */}
+        <SectionHeader title="PERFORMANCE" />
+        <div className="bg-[#111] border border-[#333] p-4 mb-12">
+          <div className="flex items-center justify-between mb-4">
+            <div className="font-mono text-[10px] text-[#6B6B6B] uppercase tracking-widest">Mock data — backend needed</div>
+            <div className="flex gap-2 font-mono text-[10px] uppercase tracking-widest">
+              {['7D', '30D', '90D', 'ALL'].map(p => (
+                <button key={p} onClick={() => setChartPeriod(p)} className={`px-3 py-1 transition-colors ${chartPeriod === p ? 'bg-[#333] text-white' : 'text-[#6B6B6B] hover:text-white'}`}>
+                  [{p}]
+                </button>
+              ))}
+            </div>
+          </div>
+          <PerformanceChart data={vaultChart} benchmarkData={benchChart} />
+        </div>
+
+        {/* RISK DISCLAIMER */}
+        <div className="bg-[#111] border border-[#333] border-l-2 border-l-yellow-500 p-4 flex items-start gap-3">
+          <AlertTriangle className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+          <p className="font-mono text-xs text-[#6B6B6B] leading-relaxed">
+            Past performance does not guarantee future results. Prediction markets are volatile and carry significant risk. Never deposit more than you can afford to lose. Gordon.fi does not provide financial advice.
+          </p>
+        </div>
       </main>
 
       <Toast message={toastMessage} visible={toastVisible} />
-      <DepositModal isOpen={depositOpen} onClose={() => setDepositOpen(false)} vaultId={vault.id} onSuccess={() => showToast('Deposit successful!')} />
-      <WithdrawModal isOpen={withdrawOpen} onClose={() => setWithdrawOpen(false)} vaultId={vault.id} onSuccess={() => showToast('Withdrawal successful!')} />
+      <DepositModal isOpen={depositOpen} onClose={() => setDepositOpen(false)} vaultAddress={vaultAddress} vaultName={vaultConfig.name} shareSymbol={vaultConfig.shareSymbol} onSuccess={handleDepositSuccess} />
+      <WithdrawModal isOpen={withdrawOpen} onClose={() => setWithdrawOpen(false)} vaultAddress={vaultAddress} vaultName={vaultConfig.name} shareSymbol={vaultConfig.shareSymbol} onSuccess={handleWithdrawSuccess} />
     </div>
   );
 }
