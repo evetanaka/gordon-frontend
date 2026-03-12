@@ -2,9 +2,13 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import ConnectButton from '@/components/ConnectButton';
 import Navbar from '@/components/Navbar';
 import MobileNav from '@/components/MobileNav';
+import { formatUnits } from 'viem';
+import { useToken } from '@/hooks/useToken';
+import { usePriceFeed } from '@/hooks/usePriceFeed';
+import { useTreasury } from '@/hooks/useTreasury';
+import { useStaking } from '@/hooks/useStaking';
 import {
   ChevronDown, ExternalLink, Copy, Power, ArrowRight,
   LayoutDashboard, Layers, Coins, Check, TrendingUp,
@@ -27,27 +31,6 @@ const useScrollReveal = (options: { threshold?: number; delay?: number } = { thr
     return () => observer.disconnect();
   }, [options.delay, options.threshold]);
   return [ref, isVisible] as const;
-};
-
-const useCountUp = (end: number, duration = 2000, start = 0, decimals = 0, prefix = '', suffix = '') => {
-  const [count, setCount] = useState(start);
-  const [ref, isVisible] = useScrollReveal({ threshold: 0.5 });
-  useEffect(() => {
-    if (!isVisible) return;
-    let startTime: number | null = null;
-    const animate = (timestamp: number) => {
-      if (!startTime) startTime = timestamp;
-      const progress = timestamp - startTime;
-      const pct = Math.min(progress / duration, 1);
-      const easeOut = 1 - Math.pow(1 - pct, 5);
-      setCount(start + (end - start) * easeOut);
-      if (pct < 1) requestAnimationFrame(animate);
-      else setCount(end);
-    };
-    requestAnimationFrame(animate);
-  }, [isVisible, end, duration, start]);
-  const formatted = count.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  return [ref, `${prefix}${formatted}${suffix}`] as const;
 };
 
 const useOnClickOutside = (ref: React.RefObject<any>, handler: (e: any) => void) => {
@@ -94,15 +77,7 @@ const SectionHeader = ({ title, subtitle }: { title: string; subtitle?: string }
   );
 };
 
-// --- MOCK DATA ---
-
-const GDN_PRICE = 0.842;
-const TOKEN_DATA = {
-  price: 0.842, priceChange24h: 5.2, marketCap: 84200000, marketCapRank: 247,
-  volume24h: 3200000, volumeChange: 12, totalBurned: 1420000, burnPercent: 1.42,
-  circulatingSupply: 98580000, totalSupply: 100000000,
-  priceHigh: 1.12, priceLow: 0.34, priceAvg: 0.71,
-};
+// --- MOCK DATA (kept for chart/burn log) ---
 
 // Price history mock (90 points)
 const PRICE_HISTORY = (() => {
@@ -139,13 +114,15 @@ const BURN_LOG: { timestamp: string; display: string; amount: number; usd: numbe
 ];
 
 // Metric card
-const MetricCard = ({ label, value, sub, index }: { label: string; value: string; sub: string; index: number }) => {
+const MetricCard = ({ label, value, sub, index, isLoading }: { label: string; value: string; sub: string; index: number; isLoading?: boolean }) => {
   const [ref, isVisible] = useScrollReveal({ delay: index * 100 });
   return (
     <div ref={ref} className={`bg-[#111] border border-[#222] p-4 transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
       <div className="font-mono text-[10px] uppercase tracking-widest text-[#6B6B6B] mb-2">{label}</div>
-      <div className="font-mono text-xl md:text-2xl text-white">{value}</div>
-      <div className="font-mono text-xs text-[#6B6B6B] mt-1">{sub}</div>
+      <div className="font-mono text-xl md:text-2xl text-white">
+        {isLoading ? <span className="animate-pulse text-[#333]">---</span> : value}
+      </div>
+      <div className="font-mono text-xs text-[#6B6B6B] mt-1">{isLoading ? '' : sub}</div>
     </div>
   );
 };
@@ -188,7 +165,6 @@ const PriceChart = ({ data, period }: { data: { time: string; price: number }[];
             <stop offset="100%" stopColor="#00FF66" stopOpacity="0" />
           </linearGradient>
         </defs>
-        {/* Grid lines */}
         {[0.25, 0.5, 0.75].map(pct => {
           const y = py + pct * (h - py * 2);
           const val = max - pct * (max - min);
@@ -199,13 +175,10 @@ const PriceChart = ({ data, period }: { data: { time: string; price: number }[];
             </g>
           );
         })}
-        {/* Area */}
         <path d={area} fill="url(#priceGrad)" className={`transition-opacity duration-1000 ${drawn ? 'opacity-100' : 'opacity-0'}`} />
-        {/* Line */}
         <path d={line} fill="none" stroke="#00FF66" strokeWidth="2"
           strokeDasharray={totalLen} strokeDashoffset={drawn ? 0 : totalLen}
           style={{ transition: 'stroke-dashoffset 1.5s ease-out' }} />
-        {/* Hover */}
         {hoveredIdx !== null && (
           <>
             <line x1={xScale(hoveredIdx)} y1={py} x2={xScale(hoveredIdx)} y2={h - py} stroke="#333" strokeDasharray="2 2" />
@@ -232,21 +205,36 @@ const FlywheelNode = ({ icon, label, delay }: { icon: React.ReactNode; label: st
   );
 };
 
+// --- Helper ---
+function formatNumber(n: number, decimals = 0): string {
+  return n.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
 // --- MAIN PAGE ---
 
 export default function TokenPage() {
-  const [isConnected, setIsConnected] = useState(true);
-  const [walletOpen, setWalletOpen] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: '' });
   const [chartPeriod, setChartPeriod] = useState('ALL');
-  const walletRef = useRef<HTMLDivElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
 
-  // Staking state
+  // On-chain data
+  const { totalSupply: gdnTotalSupply, isLoading: tokenLoading } = useToken('GDN');
+  const { price: rawPrice, isLoading: priceLoading } = usePriceFeed();
+  const { totalGdnBurned, totalBuybacks, isLoading: treasuryLoading } = useTreasury();
+  const { totalEffectiveStaked, isLoading: stakingLoading } = useStaking();
 
-  useOnClickOutside(walletRef, () => setWalletOpen(false));
-  useOnClickOutside(menuRef, () => setMobileMenuOpen(false));
+  // Derived values
+  const INITIAL_SUPPLY = 100_000_000;
+  const totalSupplyNum = gdnTotalSupply ? parseFloat(formatUnits(gdnTotalSupply, 18)) : INITIAL_SUPPLY;
+  const burnedNum = INITIAL_SUPPLY - totalSupplyNum;
+  const circulatingNum = totalSupplyNum; // simplified: circulating ≈ totalSupply
+  const priceNum = rawPrice ? parseFloat(formatUnits(rawPrice, 8)) : 0;
+  const marketCapNum = priceNum * circulatingNum;
+  const totalBurnedFromTreasury = totalGdnBurned ? parseFloat(formatUnits(totalGdnBurned, 18)) : 0;
+  const totalBuybacksNum = totalBuybacks ? parseFloat(formatUnits(totalBuybacks, 6)) : 0;
+  const totalStakedNum = totalEffectiveStaked ? parseFloat(formatUnits(totalEffectiveStaked, 18)) : 0;
+  const burnPercent = totalSupplyNum > 0 ? ((burnedNum / INITIAL_SUPPLY) * 100) : 0;
+
+  const isLoading = tokenLoading || priceLoading;
 
   const showToast = (msg: string) => {
     setToast({ visible: true, message: msg });
@@ -254,22 +242,6 @@ export default function TokenPage() {
   };
 
   const copyToClipboard = (text: string) => { navigator.clipboard.writeText(text); showToast('Copied to clipboard'); };
-
-
-  const navLinks = [
-    { label: 'Dashboard', href: '/dashboard' },
-    { label: 'Vaults', href: '/vaults' },
-    { label: 'Leaderboard', href: '/leaderboard' },
-    { label: 'Stake', href: '/stake' },
-    { label: '$GDN', href: '/token' },
-  ];
-
-  const bottomNavItems = [
-    { label: 'Home', icon: <LayoutDashboard className="w-5 h-5" />, href: '/dashboard' },
-    { label: 'Vaults', icon: <Layers className="w-5 h-5" />, href: '/vaults' },
-    { label: 'Stake', icon: <Zap className="w-5 h-5" />, href: '/stake' },
-    { label: '$GDN', icon: <Coins className="w-5 h-5" />, href: '/token' },
-  ];
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white">
@@ -283,17 +255,29 @@ export default function TokenPage() {
         {/* 1. HEADER */}
         <SectionHeader title="$GDN TOKEN" subtitle="The deflationary engine behind Gordon.fi" />
 
-        {/* 2. TOKEN METRICS */}
+        {/* 2. TOKEN METRICS — on-chain */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-8">
-          <MetricCard index={0} label="PRICE" value={`$${TOKEN_DATA.price}`} sub={`+${TOKEN_DATA.priceChange24h}% 24h`} />
-          <MetricCard index={1} label="MARKET CAP" value="$84.2M" sub={`#${TOKEN_DATA.marketCapRank} rank`} />
-          <MetricCard index={2} label="24H VOLUME" value="$3.2M" sub={`+${TOKEN_DATA.volumeChange}% vs 7d avg`} />
-          <MetricCard index={3} label="TOTAL BURNED" value="1,420,000 GDN" sub={`${TOKEN_DATA.burnPercent}% of supply`} />
-          <MetricCard index={4} label="CIRCULATING" value="98,580,000" sub="98.58%" />
-          <MetricCard index={5} label="TOTAL SUPPLY" value="100,000,000" sub="Fixed cap" />
+          <MetricCard index={0} label="PRICE" isLoading={priceLoading}
+            value={priceNum > 0 ? `$${priceNum.toFixed(4)}` : '$—'}
+            sub="On-chain oracle" />
+          <MetricCard index={1} label="MARKET CAP" isLoading={isLoading}
+            value={marketCapNum > 0 ? `$${formatNumber(marketCapNum, 0)}` : '$—'}
+            sub="Price × circulating" />
+          <MetricCard index={2} label="TOTAL BURNED" isLoading={treasuryLoading}
+            value={totalBurnedFromTreasury > 0 ? `${formatNumber(totalBurnedFromTreasury, 0)} GDN` : (burnedNum > 0 ? `${formatNumber(burnedNum, 0)} GDN` : '0 GDN')}
+            sub={burnPercent > 0 ? `${burnPercent.toFixed(2)}% of initial supply` : 'No burns yet'} />
+          <MetricCard index={3} label="BUYBACKS" isLoading={treasuryLoading}
+            value={totalBuybacksNum > 0 ? `$${formatNumber(totalBuybacksNum, 2)}` : '$0'}
+            sub="USDC used for buyback" />
+          <MetricCard index={4} label="CIRCULATING" isLoading={tokenLoading}
+            value={formatNumber(circulatingNum, 0)}
+            sub={`${((circulatingNum / INITIAL_SUPPLY) * 100).toFixed(2)}%`} />
+          <MetricCard index={5} label="TOTAL SUPPLY" isLoading={tokenLoading}
+            value={formatNumber(totalSupplyNum, 0)}
+            sub="Fixed cap 100M" />
         </div>
 
-        {/* 3. PRICE CHART */}
+        {/* 3. PRICE CHART — mock (needs historical data) */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-mono text-xs text-[#6B6B6B] uppercase tracking-widest flex items-center gap-2"><span className="text-[#00FF66]">&gt;</span> PRICE CHART</h3>
@@ -306,9 +290,8 @@ export default function TokenPage() {
           <div className="bg-[#111] border border-[#222] p-4">
             <PriceChart data={PRICE_HISTORY} period={chartPeriod} />
             <div className="flex gap-6 mt-4 font-mono text-xs text-[#6B6B6B]">
-              <span>HIGH: <span className="text-[#00FF66]">${TOKEN_DATA.priceHigh}</span></span>
-              <span>LOW: <span className="text-[#FF3B3B]">${TOKEN_DATA.priceLow}</span></span>
-              <span>AVG: <span className="text-white">${TOKEN_DATA.priceAvg}</span></span>
+              <span>CURRENT: <span className="text-[#00FF66]">${priceNum > 0 ? priceNum.toFixed(4) : '—'}</span></span>
+              <span className="text-[#6B6B6B] italic">Chart uses mock data</span>
             </div>
           </div>
         </div>
@@ -317,6 +300,12 @@ export default function TokenPage() {
         <div className="mb-8">
           <SectionHeader title="BUYBACK & BURN LOG" />
           <div className="bg-[#0A0A0A] border border-[#222] p-4 md:p-6 font-mono text-sm max-h-[500px] overflow-y-auto">
+            {/* Real totals at top */}
+            <div className="mb-4 pb-3 border-b border-[#222] text-xs space-y-1">
+              <div className="text-[#00FF66] font-bold">── ON-CHAIN TOTALS ──</div>
+              <div>Total GDN Burned: <span className="text-white">{totalBurnedFromTreasury > 0 ? `${formatNumber(totalBurnedFromTreasury, 2)} GDN` : '0 GDN'}</span></div>
+              <div>Total Buybacks: <span className="text-white">{totalBuybacksNum > 0 ? `$${formatNumber(totalBuybacksNum, 2)} USDC` : '$0 USDC'}</span></div>
+            </div>
             <div className="text-[#00FF66] mb-4">gordon@fi:~$ tail -f buyback.log</div>
             <div className="space-y-4">
               {BURN_LOG.map((entry, i) => (
@@ -331,7 +320,7 @@ export default function TokenPage() {
                   </div>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 pl-4 md:pl-0">
                     <span className="text-[#6B6B6B] text-xs">src: {entry.source}</span>
-                    <a href={`https://polygonscan.com/tx/${entry.tx}`} target="_blank" rel="noreferrer" className="text-xs text-[#6B6B6B] hover:text-[#00FF66] flex items-center gap-1">
+                    <a href={`https://sepolia.etherscan.io/tx/${entry.tx}`} target="_blank" rel="noreferrer" className="text-xs text-[#6B6B6B] hover:text-[#00FF66] flex items-center gap-1">
                       tx: {entry.tx} <ExternalLink className="w-3 h-3" />
                     </a>
                   </div>
@@ -341,12 +330,6 @@ export default function TokenPage() {
             <div className="mt-4 text-[#6B6B6B]">
               <span className="opacity-50">░</span> Waiting for next burn...
               <span className="animate-pulse ml-1">█</span>
-            </div>
-            <div className="mt-4 pt-3 border-t border-[#222] text-xs text-[#6B6B6B] space-y-1">
-              <div>── STATS ──</div>
-              <div>Total burned today: <span className="text-white">4,452 GDN</span> ($3,748)</div>
-              <div>7-day burn rate: <span className="text-white">18,240 GDN/week</span></div>
-              <div>Avg burn frequency: <span className="text-white">~4.2 hours</span></div>
             </div>
           </div>
         </div>
@@ -361,7 +344,6 @@ export default function TokenPage() {
               <FlywheelNode delay={150} icon={<Coins className="w-6 h-6" />} label="20% Perf Fee" />
               <FlywheelNode delay={300} icon={<ArrowUpRight className="w-6 h-6" />} label="Market Buy GDN" />
             </div>
-            {/* Arrows row */}
             <div className="hidden md:flex justify-around mb-6">
               {[0, 1, 2].map(i => (
                 <div key={i} className="text-[#00FF66]">
@@ -409,7 +391,7 @@ export default function TokenPage() {
           </div>
         </div>
 
-        {/* 6. STAKE CTA */}
+        {/* 6. STAKE CTA — real total staked */}
         <div className="mb-8">
           <div className="bg-[#111] border border-[#222] p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-4">
@@ -418,7 +400,12 @@ export default function TokenPage() {
               </div>
               <div>
                 <h3 className="font-mono text-lg text-white mb-1">Stake $GDN · Reduce Fees</h3>
-                <p className="font-mono text-xs text-[#6B6B6B]">Stake to climb Loyalty Ranks (up to 90% fee reduction), unlock governance, early vault access & more.</p>
+                <p className="font-mono text-xs text-[#6B6B6B]">
+                  {totalStakedNum > 0
+                    ? `${formatNumber(totalStakedNum, 0)} GDN staked · `
+                    : ''}
+                  Stake to climb Loyalty Ranks (up to 90% fee reduction), unlock governance, early vault access & more.
+                </p>
               </div>
             </div>
             <Link href="/stake" className="bg-[#00FF66] text-black font-mono text-sm font-bold px-8 py-3 hover:bg-[#00DD55] transition-colors flex items-center gap-2 shrink-0">
@@ -435,15 +422,15 @@ export default function TokenPage() {
               <div className="flex-1">
                 <div className="font-mono text-[10px] uppercase tracking-widest text-[#6B6B6B] mb-1">CONTRACT</div>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-sm text-white">0xGDN...1234</span>
-                  <button onClick={() => copyToClipboard('0xGDN00000000000000001234')} className="text-[#6B6B6B] hover:text-[#00FF66] transition-colors"><Copy className="w-3 h-3" /></button>
+                  <span className="font-mono text-sm text-white">0x89BB...5B1</span>
+                  <button onClick={() => copyToClipboard('0x89BB90aa215B09F740A4E346465a6ab0E78215B1')} className="text-[#6B6B6B] hover:text-[#00FF66] transition-colors"><Copy className="w-3 h-3" /></button>
                 </div>
               </div>
               <div>
                 <div className="font-mono text-[10px] uppercase tracking-widest text-[#6B6B6B] mb-1">NETWORK</div>
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-purple-500 rounded-full" />
-                  <span className="font-mono text-sm text-white">Polygon</span>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                  <span className="font-mono text-sm text-white">Sepolia</span>
                 </div>
               </div>
               <div>
@@ -466,7 +453,6 @@ export default function TokenPage() {
 
       <MobileNav />
 
-      {/* Keyframe for burn log animation */}
       <style jsx global>{`
         @keyframes glitch-h { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(100%); } }
         .animate-glitch-h { animation: glitch-h 3s linear infinite; }
