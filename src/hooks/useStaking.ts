@@ -1,6 +1,6 @@
 'use client'
 
-import { useReadContract, useWriteContract, useAccount } from 'wagmi'
+import { useReadContract, useWriteContract, useWaitForTransactionReceipt, useAccount } from 'wagmi'
 import { type Address, parseUnits } from 'viem'
 import StakingABI from '@/config/abis/GDNStaking.json'
 import { CONTRACTS } from '@/config/contracts'
@@ -9,7 +9,20 @@ const STAKING = CONTRACTS.GDNStaking as Address
 
 export function useStaking() {
   const { address } = useAccount()
-  const { writeContract, isPending: isWritePending } = useWriteContract()
+
+  const {
+    writeContract,
+    data: txHash,
+    isPending: isWritePending,
+    reset: resetWrite,
+    error: writeError,
+  } = useWriteContract()
+
+  const { isLoading: isTxConfirming, isSuccess: isTxConfirmed } = useWaitForTransactionReceipt({
+    hash: txHash,
+  })
+
+  // --- Reads ---
 
   const stakeInfo = useReadContract({
     address: STAKING,
@@ -27,21 +40,21 @@ export function useStaking() {
     query: { enabled: !!address },
   })
 
-  const totalDeposited = useReadContract({
-    address: STAKING,
-    abi: StakingABI,
-    functionName: 'totalDeposited',
-    args: address ? [address] : undefined,
-    query: { enabled: !!address },
-  })
-
   const totalEffectiveStaked = useReadContract({
     address: STAKING,
     abi: StakingABI,
     functionName: 'totalEffectiveStaked',
   })
 
-  const isStaking = useReadContract({
+  const pendingRewards = useReadContract({
+    address: STAKING,
+    abi: StakingABI,
+    functionName: 'pendingRewards',
+    args: address ? [address] : undefined,
+    query: { enabled: !!address },
+  })
+
+  const isStakingRead = useReadContract({
     address: STAKING,
     abi: StakingABI,
     functionName: 'isStaking',
@@ -57,13 +70,7 @@ export function useStaking() {
     query: { enabled: !!address },
   })
 
-  const pendingRewards = useReadContract({
-    address: STAKING,
-    abi: StakingABI,
-    functionName: 'pendingRewards',
-    args: address ? [address] : undefined,
-    query: { enabled: !!address },
-  })
+  // --- Writes ---
 
   const stake = (amount: string, lockMonths: number) => {
     writeContract({
@@ -90,19 +97,50 @@ export function useStaking() {
     })
   }
 
+  // Parse stake info tuple: (amount, effectiveAmount, lockStart, lockEnd, boostBps, rewardDebt)
+  const stakeData = stakeInfo.data as
+    | [bigint, bigint, bigint, bigint, number, bigint]
+    | undefined
+
+  const refetchAll = () => {
+    stakeInfo.refetch()
+    loyaltyTier.refetch()
+    totalEffectiveStaked.refetch()
+    pendingRewards.refetch()
+    isStakingRead.refetch()
+    timeUntilUnlock.refetch()
+  }
+
   return {
-    stakeInfo: stakeInfo.data as [bigint, bigint, bigint, bigint, number, bigint] | undefined,
+    // Parsed stake fields
+    stakedAmount: stakeData?.[0],
+    effectiveAmount: stakeData?.[1],
+    lockStart: stakeData?.[2],
+    lockEnd: stakeData?.[3],
+    boostBps: stakeData?.[4],
+    rewardDebt: stakeData?.[5],
+
     loyaltyTier: loyaltyTier.data as number | undefined,
-    totalDeposited: totalDeposited.data as bigint | undefined,
     totalEffectiveStaked: totalEffectiveStaked.data as bigint | undefined,
-    isStaking: isStaking.data as boolean | undefined,
-    timeUntilUnlock: timeUntilUnlock.data as bigint | undefined,
     pendingRewards: pendingRewards.data as bigint | undefined,
+    isUserStaking: isStakingRead.data as boolean | undefined,
+    timeUntilUnlock: timeUntilUnlock.data as bigint | undefined,
+
+    // Write actions
     stake,
     unstake,
     claimRewards,
-    isLoading: stakeInfo.isLoading,
+
+    // Tx state
+    txHash,
     isWritePending,
+    isTxConfirming,
+    isTxConfirmed,
+    writeError,
+    resetWrite,
+    refetchAll,
+
+    isLoading: stakeInfo.isLoading,
     error: stakeInfo.error,
   }
 }

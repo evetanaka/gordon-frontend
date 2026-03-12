@@ -2,16 +2,20 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import { useAccount } from 'wagmi';
+import { formatUnits, type Address } from 'viem';
 import ConnectButton from '@/components/ConnectButton';
 import Navbar from '@/components/Navbar';
 import MobileNav from '@/components/MobileNav';
+import { useStaking } from '@/hooks/useStaking';
+import { useToken, useAllowance } from '@/hooks/useToken';
+import { CONTRACTS } from '@/config/contracts';
 import {
   ChevronDown, ExternalLink, Copy, Power, Check, X,
   LayoutDashboard, Layers, Trophy, Coins, Lock, Zap,
   AlertTriangle, Crown, ArrowRight, Shield, Star, Gift,
-  Users, Vote, TrendingUp, ChevronUp, Flame, Award
+  Users, Vote, TrendingUp, ChevronUp, Flame, Award, Clock
 } from 'lucide-react';
-import { calculateLoyaltyRank } from '@/components/DepositModal';
 
 // --- CUSTOM HOOKS ---
 
@@ -52,18 +56,6 @@ const useCountUp = (end: number, duration = 2000, start = 0, decimals = 0, prefi
   return [ref, `${prefix}${formatted}${suffix}`] as const;
 };
 
-const useOnClickOutside = (ref: React.RefObject<any>, handler: (e: any) => void) => {
-  useEffect(() => {
-    const listener = (event: any) => {
-      if (!ref.current || ref.current.contains(event.target)) return;
-      handler(event);
-    };
-    document.addEventListener('mousedown', listener);
-    document.addEventListener('touchstart', listener);
-    return () => { document.removeEventListener('mousedown', listener); document.removeEventListener('touchstart', listener); };
-  }, [ref, handler]);
-};
-
 // --- TOAST ---
 
 const Toast = ({ message, visible }: { message: string; visible: boolean }) => {
@@ -79,15 +71,16 @@ const Toast = ({ message, visible }: { message: string; visible: boolean }) => {
 
 // --- CONSTANTS ---
 
-const GDN_PRICE = 0.842;
-
-const RANK_TIERS = [
-  { rank: 'none', label: 'Unranked', emoji: '—', feeDeposit: 1.0, feeWithdraw: 0.50, minRatio: 0, minDeposit: 0, color: '#6B6B6B' },
-  { rank: 'bronze', label: 'Bronze', emoji: '🥉', feeDeposit: 0.75, feeWithdraw: 0.375, minRatio: 0.01, minDeposit: 0, color: '#CD7F32' },
-  { rank: 'silver', label: 'Silver', emoji: '🥈', feeDeposit: 0.50, feeWithdraw: 0.25, minRatio: 0.05, minDeposit: 0, color: '#C0C0C0' },
-  { rank: 'gold', label: 'Gold', emoji: '🥇', feeDeposit: 0.25, feeWithdraw: 0.125, minRatio: 0.10, minDeposit: 0, color: '#FFD700' },
-  { rank: 'platinum', label: 'Platinum', emoji: '💎', feeDeposit: 0.10, feeWithdraw: 0.05, minRatio: 0.10, minDeposit: 500000, color: '#00FF66' },
+const LOCK_OPTIONS = [
+  { months: 3, boost: '1x', boostBps: 10000 },
+  { months: 6, boost: '1.5x', boostBps: 15000 },
+  { months: 9, boost: '2x', boostBps: 20000 },
+  { months: 12, boost: '3x', boostBps: 30000 },
 ];
+
+const TIER_LABELS = ['Unranked', 'Bronze', 'Silver', 'Gold', 'Platinum'];
+const TIER_EMOJIS = ['—', '🥉', '🥈', '🥇', '💎'];
+const TIER_COLORS = ['#6B6B6B', '#CD7F32', '#C0C0C0', '#FFD700', '#00FF66'];
 
 interface Perk {
   label: string;
@@ -107,23 +100,6 @@ const PERKS_TABLE: Perk[] = [
   { label: 'Governance weight', icon: <Crown className="w-3.5 h-3.5" />, values: ['—', '—', '—', '1×', '2×'] },
 ];
 
-// --- NAV LINKS ---
-
-const navLinks = [
-  { label: 'Dashboard', href: '/dashboard' },
-  { label: 'Vaults', href: '/vaults' },
-  { label: 'Leaderboard', href: '/leaderboard' },
-  { label: 'Stake', href: '/stake' },
-  { label: '$GDN', href: '/token' },
-];
-
-const bottomNavItems = [
-  { label: 'Home', icon: <LayoutDashboard className="w-5 h-5" />, href: '/dashboard' },
-  { label: 'Vaults', icon: <Layers className="w-5 h-5" />, href: '/vaults' },
-  { label: 'Stake', icon: <Zap className="w-5 h-5" />, href: '/stake' },
-  { label: '$GDN', icon: <Coins className="w-5 h-5" />, href: '/token' },
-];
-
 // --- HOW IT WORKS CARD ---
 
 const HowItWorksCard = ({ delay, step, title, desc, icon }: { delay: number; step: string; title: string; desc: string; icon: React.ReactNode }) => {
@@ -140,96 +116,175 @@ const HowItWorksCard = ({ delay, step, title, desc, icon }: { delay: number; ste
   );
 };
 
+// --- HELPERS ---
+
+function formatGDN(val: bigint | undefined): string {
+  if (!val) return '0';
+  return Number(formatUnits(val, 18)).toLocaleString(undefined, { maximumFractionDigits: 2 });
+}
+
+function formatGDNRaw(val: bigint | undefined): number {
+  if (!val) return 0;
+  return Number(formatUnits(val, 18));
+}
+
+function calcSlashPercent(lockEnd: bigint, now: number): number {
+  const lockEndSec = Number(lockEnd);
+  if (now >= lockEndSec) return 0;
+  const remainingSec = lockEndSec - now;
+  const remainingMonths = Math.ceil(remainingSec / (30 * 24 * 3600));
+  const slash = 5 + 0.5 * remainingMonths;
+  return Math.min(slash, 10);
+}
+
+function formatDate(timestamp: bigint): string {
+  if (!timestamp || timestamp === 0n) return '—';
+  return new Date(Number(timestamp) * 1000).toLocaleDateString('en-US', {
+    year: 'numeric', month: 'short', day: 'numeric',
+  });
+}
+
+function formatDuration(seconds: bigint | undefined): string {
+  if (!seconds || seconds === 0n) return 'Unlocked';
+  const s = Number(seconds);
+  const days = Math.floor(s / 86400);
+  if (days > 30) {
+    const months = Math.floor(days / 30);
+    const remDays = days % 30;
+    return remDays > 0 ? `${months}mo ${remDays}d` : `${months}mo`;
+  }
+  if (days > 0) return `${days}d`;
+  const hrs = Math.floor(s / 3600);
+  return hrs > 0 ? `${hrs}h` : `< 1h`;
+}
+
 // --- MAIN PAGE ---
 
 export default function StakePage() {
-  const [isConnected, setIsConnected] = useState(true);
-  const [walletOpen, setWalletOpen] = useState(false);
+  const { address, isConnected } = useAccount();
   const [toast, setToast] = useState({ visible: false, message: '' });
-  const walletRef = useRef<HTMLDivElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  // Staking state
-  const [stakedAmount, setStakedAmount] = useState(772);
-  const [walletBalance, setWalletBalance] = useState(1200);
-  const totalDeposited = 12400;
   const [stakeInput, setStakeInput] = useState('');
-  const [unstakeInput, setUnstakeInput] = useState('');
-  const [stakingStep, setStakingStep] = useState<'idle' | 'approving' | 'staking' | 'unstaking' | 'done'>('idle');
+  const [lockMonths, setLockMonths] = useState(3);
   const [activeTab, setActiveTab] = useState<'stake' | 'unstake'>('stake');
+  const [txStep, setTxStep] = useState<'idle' | 'approving' | 'staking' | 'unstaking' | 'claiming'>('idle');
 
-  useOnClickOutside(walletRef, () => setWalletOpen(false));
-  useOnClickOutside(menuRef, () => {});
+  // Hooks
+  const staking = useStaking();
+  const gdnToken = useToken('GDN');
+  const allowance = useAllowance('GDN', CONTRACTS.GDNStaking as Address);
 
   const showToast = (msg: string) => {
     setToast({ visible: true, message: msg });
     setTimeout(() => setToast({ visible: false, message: '' }), 3000);
   };
 
-  const copyToClipboard = (text: string) => { navigator.clipboard.writeText(text); showToast('Copied to clipboard'); };
+  // Refetch on tx confirmation
+  useEffect(() => {
+    if (staking.isTxConfirmed) {
+      staking.refetchAll();
+      gdnToken.balance !== undefined && allowance.refetch();
+      if (txStep === 'approving') {
+        showToast('Approval confirmed — now stake');
+        // Auto-proceed to stake after approval
+        setTimeout(() => {
+          const amt = parseFloat(stakeInput);
+          if (amt > 0) {
+            setTxStep('staking');
+            staking.resetWrite();
+            setTimeout(() => {
+              staking.stake(stakeInput, lockMonths);
+            }, 300);
+          } else {
+            setTxStep('idle');
+          }
+        }, 500);
+      } else if (txStep === 'staking') {
+        showToast(`Staked ${stakeInput} GDN successfully`);
+        setStakeInput('');
+        setTxStep('idle');
+        staking.resetWrite();
+      } else if (txStep === 'unstaking') {
+        showToast('Unstaked successfully');
+        setTxStep('idle');
+        staking.resetWrite();
+      } else if (txStep === 'claiming') {
+        showToast('Rewards claimed');
+        setTxStep('idle');
+        staking.resetWrite();
+      }
+    }
+  }, [staking.isTxConfirmed]);
 
-  const currentRank = calculateLoyaltyRank(stakedAmount, totalDeposited);
-  const currentRankIdx = RANK_TIERS.findIndex(r => r.rank === currentRank.rank);
-  const currentRatio = totalDeposited > 0 ? (stakedAmount * GDN_PRICE) / totalDeposited : 0;
+  // Reset on write error
+  useEffect(() => {
+    if (staking.writeError) {
+      setTxStep('idle');
+    }
+  }, [staking.writeError]);
 
-  // Preview ranks
-  const stakePreview = stakeInput && parseFloat(stakeInput) > 0
-    ? calculateLoyaltyRank(stakedAmount + parseFloat(stakeInput), totalDeposited) : null;
-  const unstakePreview = unstakeInput && parseFloat(unstakeInput) > 0
-    ? calculateLoyaltyRank(Math.max(0, stakedAmount - parseFloat(unstakeInput)), totalDeposited) : null;
+  // Derived values
+  const walletBalance = formatGDNRaw(gdnToken.balance);
+  const stakedAmt = formatGDNRaw(staking.stakedAmount);
+  const pendingRewardsAmt = formatGDNRaw(staking.pendingRewards);
+  const totalStaked = formatGDNRaw(staking.totalEffectiveStaked);
+  const tierIdx = (staking.loyaltyTier ?? 0) as number;
+  const boostBps = staking.boostBps ?? 0;
+  const boostDisplay = boostBps > 0 ? `${(boostBps / 10000).toFixed(1)}x` : '—';
+  const lockEnd = staking.lockEnd ?? 0n;
+  const lockExpired = lockEnd > 0n && Number(lockEnd) <= Math.floor(Date.now() / 1000);
+  const hasStake = staking.isUserStaking === true && stakedAmt > 0;
+  const nowSec = Math.floor(Date.now() / 1000);
+  const slashPct = hasStake && !lockExpired ? calcSlashPercent(lockEnd, nowSec) : 0;
 
-  const unstakeWarning = unstakePreview && unstakePreview.rank !== currentRank.rank;
+  // Check if allowance sufficient
+  const stakeAmtNum = parseFloat(stakeInput) || 0;
+  const currentAllowance = allowance.allowance ?? 0n;
+  const needsApproval = stakeAmtNum > 0 && currentAllowance < BigInt(Math.floor(stakeAmtNum * 1e18));
 
-  // Progress to next rank
-  const nextRankTier = currentRankIdx < 4 ? RANK_TIERS[currentRankIdx + 1] : null;
-  const progressPct = nextRankTier ? Math.min(100, (currentRatio / nextRankTier.minRatio) * 100) : 100;
-  const gdnNeeded = nextRankTier ? Math.max(0, Math.ceil(((nextRankTier.minRatio * totalDeposited) - (stakedAmount * GDN_PRICE)) / GDN_PRICE)) : 0;
-
-  // Count-up stats
-  const [tvlRef, tvlVal] = useCountUp(2.4, 2000, 0, 2, '$', 'M');
-  const [stakersRef, stakersVal] = useCountUp(1847, 1800, 0, 0);
-  const [avgStakeRef, avgStakeVal] = useCountUp(1298, 2000, 0, 0, '', ' GDN');
-  const [burnRef, burnVal] = useCountUp(1.42, 2000, 0, 2, '', 'M');
+  const selectedBoost = LOCK_OPTIONS.find(o => o.months === lockMonths)!;
 
   // Actions
-  const handleStake = async () => {
-    const amt = parseFloat(stakeInput);
-    if (!amt || amt <= 0 || amt > walletBalance) return;
-    setStakingStep('approving');
-    await new Promise(r => setTimeout(r, 2000));
-    setStakingStep('staking');
-    await new Promise(r => setTimeout(r, 2000));
-    setStakedAmount(prev => prev + amt);
-    setWalletBalance(prev => prev - amt);
-    setStakeInput('');
-    setStakingStep('done');
-    showToast(`Staked ${amt.toFixed(0)} GDN successfully`);
-    setTimeout(() => setStakingStep('idle'), 500);
+  const handleStake = () => {
+    if (stakeAmtNum <= 0 || stakeAmtNum > walletBalance) return;
+    if (needsApproval) {
+      setTxStep('approving');
+      staking.resetWrite();
+      gdnToken.approve(CONTRACTS.GDNStaking as Address, stakeInput);
+    } else {
+      setTxStep('staking');
+      staking.resetWrite();
+      staking.stake(stakeInput, lockMonths);
+    }
   };
 
-  const handleUnstake = async () => {
-    const amt = parseFloat(unstakeInput);
-    if (!amt || amt <= 0 || amt > stakedAmount) return;
-    setStakingStep('unstaking');
-    await new Promise(r => setTimeout(r, 2000));
-    setStakedAmount(prev => prev - amt);
-    setWalletBalance(prev => prev + amt);
-    setUnstakeInput('');
-    setStakingStep('done');
-    showToast(`Unstaked ${amt.toFixed(0)} GDN successfully`);
-    setTimeout(() => setStakingStep('idle'), 500);
+  const handleUnstake = () => {
+    if (!hasStake) return;
+    setTxStep('unstaking');
+    staking.resetWrite();
+    staking.unstake();
   };
 
-  const setStakePercent = (pct: number) => setStakeInput((walletBalance * pct).toFixed(0));
-  const setUnstakePercent = (pct: number) => setUnstakeInput((stakedAmount * pct).toFixed(0));
+  const handleClaim = () => {
+    if (pendingRewardsAmt <= 0) return;
+    setTxStep('claiming');
+    staking.resetWrite();
+    staking.claimRewards();
+  };
+
+  const setStakePercent = (pct: number) => {
+    const val = walletBalance * pct;
+    setStakeInput(val > 0 ? val.toFixed(2) : '');
+  };
+
+  // Count-up stats
+  const [tvlRef, tvlVal] = useCountUp(totalStaked, 2000, 0, 2, '', ' GDN');
+  const [stakersRef, stakersVal] = useCountUp(1847, 1800, 0, 0); // mock — needs indexer
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white">
       <Toast message={toast.message} visible={toast.visible} />
-
       <Navbar />
 
-      {/* CONTENT */}
       <main className="max-w-5xl mx-auto px-4 md:px-6 pt-24 pb-12 md:pb-24">
 
         {/* HEADER */}
@@ -241,7 +296,7 @@ export default function StakePage() {
             <div className="absolute top-0 left-0 w-1/4 h-full bg-[#00FF66] opacity-20 animate-glitch-h" />
           </div>
           <p className="font-mono text-xs text-[#6B6B6B] mt-3 max-w-xl">
-            Stake $GDN to climb Loyalty Ranks, reduce platform fees, and unlock exclusive perks. No lockup period — unstake anytime.
+            Stake $GDN with a lock period to earn rewards and climb Loyalty Ranks. Longer locks = higher boost.
           </p>
         </div>
 
@@ -250,10 +305,10 @@ export default function StakePage() {
           {[
             { ref: tvlRef, label: 'TOTAL STAKED', value: tvlVal },
             { ref: stakersRef, label: 'STAKERS', value: stakersVal },
-            { ref: avgStakeRef, label: 'AVG STAKE', value: avgStakeVal },
-            { ref: burnRef, label: 'TOTAL BURNED', value: burnVal + ' GDN' },
+            { label: 'YOUR TIER', value: `${TIER_EMOJIS[tierIdx]} ${TIER_LABELS[tierIdx]}` },
+            { label: 'PENDING REWARDS', value: `${pendingRewardsAmt.toFixed(2)} GDN` },
           ].map((s, i) => (
-            <div key={i} ref={s.ref} className="bg-[#111] border border-[#222] p-4">
+            <div key={i} ref={(s as any).ref} className="bg-[#111] border border-[#222] p-4">
               <div className="font-mono text-[10px] uppercase tracking-widest text-[#6B6B6B] mb-2">{s.label}</div>
               <div className="font-mono text-lg md:text-xl text-white">{s.value}</div>
             </div>
@@ -261,102 +316,109 @@ export default function StakePage() {
         </div>
 
         {!isConnected ? (
-          /* NOT CONNECTED */
           <div className="bg-[#111] border border-[#222] p-12 text-center">
             <Zap className="w-10 h-10 text-[#00FF66] mx-auto mb-4" />
             <h3 className="font-mono text-lg text-white mb-2">Connect Wallet to Stake</h3>
-            <p className="font-mono text-sm text-[#6B6B6B] mb-6 max-w-md mx-auto">Stake your $GDN tokens to reduce fees and unlock exclusive perks across the Gordon.fi protocol.</p>
-            <button onClick={() => setIsConnected(true)} className="bg-[#00FF66] text-black font-mono text-sm font-bold px-8 py-3 hover:bg-[#00DD55] transition-colors">Connect Wallet</button>
+            <p className="font-mono text-sm text-[#6B6B6B] mb-6 max-w-md mx-auto">Stake your $GDN tokens to earn rewards, reduce fees and unlock exclusive perks.</p>
+            <ConnectButton />
           </div>
         ) : (
           <>
             {/* TWO-COLUMN: Position + Stake/Unstake */}
             <div className="grid lg:grid-cols-5 gap-4 mb-10">
 
-              {/* LEFT: Staking Position (3 cols) */}
+              {/* LEFT: Your Position (3 cols) */}
               <div className="lg:col-span-3 bg-[#111] border border-[#222]">
-                {/* Current rank hero */}
                 <div className="p-6 border-b border-[#222]">
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-4">
                       <div className="w-16 h-16 flex items-center justify-center text-4xl" style={{
-                        background: `linear-gradient(135deg, ${RANK_TIERS[currentRankIdx].color}22, ${RANK_TIERS[currentRankIdx].color}08)`,
-                        border: `1px solid ${RANK_TIERS[currentRankIdx].color}44`,
+                        background: `linear-gradient(135deg, ${TIER_COLORS[tierIdx]}22, ${TIER_COLORS[tierIdx]}08)`,
+                        border: `1px solid ${TIER_COLORS[tierIdx]}44`,
                       }}>
-                        {currentRank.emoji}
+                        {TIER_EMOJIS[tierIdx]}
                       </div>
                       <div>
                         <div className="font-mono text-[10px] uppercase tracking-widest text-[#6B6B6B] mb-1">YOUR RANK</div>
-                        <div className="font-mono text-xl text-white font-bold">{currentRank.label}</div>
-                        <div className="font-mono text-xs text-[#6B6B6B]">{currentRank.feePercent}% deposit fee</div>
+                        <div className="font-mono text-xl text-white font-bold">{TIER_LABELS[tierIdx]}</div>
+                        <div className="font-mono text-xs text-[#6B6B6B]">Boost: {boostDisplay}</div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="font-mono text-[10px] uppercase tracking-widest text-[#6B6B6B] mb-1">STAKE RATIO</div>
-                      <div className="font-mono text-2xl text-[#00FF66]">{(currentRatio * 100).toFixed(2)}%</div>
-                    </div>
+                    {hasStake && (
+                      <div className="text-right">
+                        <div className="font-mono text-[10px] uppercase tracking-widest text-[#6B6B6B] mb-1">LOCK EXPIRY</div>
+                        <div className={`font-mono text-sm ${lockExpired ? 'text-[#00FF66]' : 'text-white'}`}>
+                          {lockExpired ? 'Unlocked ✓' : formatDate(lockEnd)}
+                        </div>
+                        {!lockExpired && staking.timeUntilUnlock && (
+                          <div className="font-mono text-[10px] text-[#6B6B6B] mt-0.5 flex items-center gap-1 justify-end">
+                            <Clock className="w-3 h-3" /> {formatDuration(staking.timeUntilUnlock)} remaining
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Stats grid */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div>
                       <div className="font-mono text-[9px] uppercase tracking-widest text-[#6B6B6B] mb-1">STAKED</div>
-                      <div className="font-mono text-sm text-white">{stakedAmount.toLocaleString()} GDN</div>
+                      <div className="font-mono text-sm text-white">{formatGDN(staking.stakedAmount)} GDN</div>
                     </div>
                     <div>
-                      <div className="font-mono text-[9px] uppercase tracking-widest text-[#6B6B6B] mb-1">VALUE</div>
-                      <div className="font-mono text-sm text-white">${(stakedAmount * GDN_PRICE).toFixed(2)}</div>
+                      <div className="font-mono text-[9px] uppercase tracking-widest text-[#6B6B6B] mb-1">EFFECTIVE</div>
+                      <div className="font-mono text-sm text-white">{formatGDN(staking.effectiveAmount)} GDN</div>
                     </div>
                     <div>
                       <div className="font-mono text-[9px] uppercase tracking-widest text-[#6B6B6B] mb-1">WALLET</div>
-                      <div className="font-mono text-sm text-white">{walletBalance.toLocaleString()} GDN</div>
+                      <div className="font-mono text-sm text-white">{walletBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })} GDN</div>
                     </div>
                     <div>
-                      <div className="font-mono text-[9px] uppercase tracking-widest text-[#6B6B6B] mb-1">TOTAL DEPOSITS</div>
-                      <div className="font-mono text-sm text-white">${totalDeposited.toLocaleString()}</div>
+                      <div className="font-mono text-[9px] uppercase tracking-widest text-[#6B6B6B] mb-1">PENDING REWARDS</div>
+                      <div className="font-mono text-sm text-[#00FF66]">{pendingRewardsAmt.toFixed(4)} GDN</div>
                     </div>
                   </div>
                 </div>
 
-                {/* Progress to next rank */}
+                {/* Claim rewards + unstake section */}
                 <div className="p-6">
-                  {nextRankTier ? (
-                    <>
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="font-mono text-xs text-[#6B6B6B] flex items-center gap-2">
-                          <span className="text-lg">{RANK_TIERS[currentRankIdx].emoji}</span>
-                          <span>{RANK_TIERS[currentRankIdx].label}</span>
-                        </div>
-                        <div className="font-mono text-xs text-[#6B6B6B] flex items-center gap-2">
-                          <span>{nextRankTier.label}</span>
-                          <span className="text-lg">{nextRankTier.emoji}</span>
-                        </div>
-                      </div>
-                      <div className="h-3 bg-[#222] w-full mb-3 relative overflow-hidden">
-                        <div className="h-full transition-all duration-700 ease-out" style={{
-                          width: `${progressPct}%`,
-                          background: `linear-gradient(90deg, ${RANK_TIERS[currentRankIdx].color}, ${nextRankTier.color})`,
-                        }} />
-                      </div>
+                  {hasStake ? (
+                    <div className="space-y-4">
+                      {/* Claim rewards */}
                       <div className="flex items-center justify-between">
-                        <div className="font-mono text-xs text-[#6B6B6B]">
-                          {(currentRatio * 100).toFixed(2)}% ratio
+                        <div>
+                          <div className="font-mono text-xs text-[#6B6B6B]">Claimable rewards</div>
+                          <div className="font-mono text-lg text-[#00FF66]">{pendingRewardsAmt.toFixed(4)} GDN</div>
                         </div>
-                        <div className="font-mono text-xs text-[#6B6B6B]">
-                          {(nextRankTier.minRatio * 100).toFixed(0)}% needed
+                        <button
+                          onClick={handleClaim}
+                          disabled={pendingRewardsAmt <= 0 || txStep !== 'idle'}
+                          className="bg-[#00FF66] text-black font-mono text-xs font-bold px-6 py-2.5 hover:bg-[#00DD55] transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                          {txStep === 'claiming' ? (
+                            <><div className="w-3 h-3 border-2 border-black border-t-transparent rounded-full animate-spin" /> Claiming...</>
+                          ) : (
+                            <><Gift className="w-3 h-3" /> Claim</>
+                          )}
+                        </button>
+                      </div>
+
+                      {/* Early unstake warning */}
+                      {!lockExpired && slashPct > 0 && (
+                        <div className="bg-[#1a1500] border border-yellow-600/30 p-3 flex items-start gap-2">
+                          <AlertTriangle className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+                          <div className="font-mono text-xs">
+                            <span className="text-yellow-400">Early unstake penalty: {slashPct.toFixed(1)}%</span>
+                            <span className="text-[#6B6B6B]"> — Lock expires {formatDate(lockEnd)}</span>
+                          </div>
                         </div>
-                      </div>
-                      <div className="mt-3 font-mono text-xs">
-                        <span className="text-[#6B6B6B]">Need </span>
-                        <span className="text-[#00FF66] font-bold">{gdnNeeded.toLocaleString()} GDN</span>
-                        <span className="text-[#6B6B6B]"> (~${(gdnNeeded * GDN_PRICE).toFixed(0)}) to reach {nextRankTier.label}</span>
-                      </div>
-                    </>
+                      )}
+                    </div>
                   ) : (
                     <div className="text-center py-4">
-                      <Crown className="w-8 h-8 text-[#00FF66] mx-auto mb-2" />
-                      <div className="font-mono text-sm text-[#00FF66]">Maximum rank achieved ✨</div>
-                      <div className="font-mono text-xs text-[#6B6B6B] mt-1">You enjoy the lowest fees on the protocol</div>
+                      <Zap className="w-8 h-8 text-[#6B6B6B] mx-auto mb-2" />
+                      <div className="font-mono text-sm text-[#6B6B6B]">No active stake</div>
+                      <div className="font-mono text-xs text-[#6B6B6B] mt-1">Stake GDN to start earning rewards</div>
                     </div>
                   )}
                 </div>
@@ -380,7 +442,7 @@ export default function StakePage() {
                       {/* Balance */}
                       <div className="flex justify-between mb-2">
                         <span className="font-mono text-[10px] uppercase tracking-widest text-[#6B6B6B]">Amount</span>
-                        <span className="font-mono text-xs text-[#6B6B6B]">Balance: <span className="text-white">{walletBalance.toLocaleString()}</span> GDN</span>
+                        <span className="font-mono text-xs text-[#6B6B6B]">Balance: <span className="text-white">{walletBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span> GDN</span>
                       </div>
 
                       {/* Input */}
@@ -397,97 +459,186 @@ export default function StakePage() {
                         ))}
                       </div>
 
+                      {/* Lock duration selector */}
+                      <div className="mb-5">
+                        <div className="font-mono text-[10px] uppercase tracking-widest text-[#6B6B6B] mb-2">Lock Duration</div>
+                        <div className="grid grid-cols-4 gap-2">
+                          {LOCK_OPTIONS.map(opt => (
+                            <button
+                              key={opt.months}
+                              onClick={() => setLockMonths(opt.months)}
+                              className={`py-3 font-mono text-center transition-colors border ${
+                                lockMonths === opt.months
+                                  ? 'border-[#00FF66] bg-[#00FF66]/10 text-[#00FF66]'
+                                  : 'border-[#333] bg-[#0A0A0A] text-[#6B6B6B] hover:border-[#00FF66]/50'
+                              }`}
+                            >
+                              <div className="text-sm font-bold">{opt.months}mo</div>
+                              <div className="text-[9px] mt-0.5">{opt.boost}</div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
                       {/* Preview */}
-                      {stakePreview && stakeInput && parseFloat(stakeInput) > 0 && (
+                      {stakeAmtNum > 0 && (
                         <div className="mb-5 space-y-2">
                           <div className="bg-[#0A0A0A] border border-[#222] p-3">
                             <div className="flex items-center justify-between font-mono text-xs">
-                              <span className="text-[#6B6B6B]">New rank</span>
-                              <span className="text-white flex items-center gap-2">
-                                {stakePreview.emoji} {stakePreview.label}
-                                {stakePreview.rank !== currentRank.rank && <span className="text-[#00FF66] text-[10px] px-1.5 py-0.5 bg-[#00FF66]/10">↑ RANK UP</span>}
-                              </span>
+                              <span className="text-[#6B6B6B]">Boost multiplier</span>
+                              <span className="text-[#00FF66]">{selectedBoost.boost}</span>
                             </div>
                           </div>
                           <div className="bg-[#0A0A0A] border border-[#222] p-3">
                             <div className="flex items-center justify-between font-mono text-xs">
-                              <span className="text-[#6B6B6B]">Deposit fee</span>
-                              <span className="text-white">{stakePreview.feePercent}%</span>
+                              <span className="text-[#6B6B6B]">Effective stake</span>
+                              <span className="text-white">{(stakeAmtNum * selectedBoost.boostBps / 10000).toFixed(2)} GDN</span>
+                            </div>
+                          </div>
+                          <div className="bg-[#0A0A0A] border border-[#222] p-3">
+                            <div className="flex items-center justify-between font-mono text-xs">
+                              <span className="text-[#6B6B6B]">Lock until</span>
+                              <span className="text-white">{new Date(Date.now() + lockMonths * 30 * 24 * 3600 * 1000).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
                             </div>
                           </div>
                         </div>
                       )}
 
                       {/* CTA */}
-                      <button onClick={handleStake} disabled={stakingStep !== 'idle' || !stakeInput || parseFloat(stakeInput) <= 0 || parseFloat(stakeInput) > walletBalance}
-                        className="w-full bg-[#00FF66] text-black font-mono text-sm font-bold py-4 hover:bg-[#00DD55] transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-                        {stakingStep === 'approving' ? (<><div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" /> Approving...</>) :
-                         stakingStep === 'staking' ? (<><div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" /> Staking...</>) :
-                         (<><Zap className="w-4 h-4" /> Stake $GDN</>)}
+                      <button
+                        onClick={handleStake}
+                        disabled={txStep !== 'idle' || stakeAmtNum <= 0 || stakeAmtNum > walletBalance}
+                        className="w-full bg-[#00FF66] text-black font-mono text-sm font-bold py-4 hover:bg-[#00DD55] transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      >
+                        {txStep === 'approving' ? (
+                          <><div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" /> Approving...</>
+                        ) : txStep === 'staking' ? (
+                          <><div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" /> Staking...</>
+                        ) : needsApproval ? (
+                          <><Check className="w-4 h-4" /> Approve & Stake</>
+                        ) : (
+                          <><Zap className="w-4 h-4" /> Stake $GDN</>
+                        )}
                       </button>
 
                       <div className="mt-3 font-mono text-[10px] text-[#6B6B6B] text-center">
-                        2-step transaction: Approve → Stake · No lockup period
+                        {needsApproval ? '2-step: Approve → Stake' : 'Sufficient allowance — 1-step stake'} · Lock: {lockMonths} months
                       </div>
+
+                      {/* Write error */}
+                      {staking.writeError && txStep === 'idle' && (
+                        <div className="mt-3 bg-[#1a0000] border border-red-600/30 p-3 font-mono text-xs text-red-400">
+                          {(staking.writeError as any)?.shortMessage || staking.writeError.message}
+                        </div>
+                      )}
                     </>
                   ) : (
                     <>
-                      {/* Staked balance */}
-                      <div className="flex justify-between mb-2">
-                        <span className="font-mono text-[10px] uppercase tracking-widest text-[#6B6B6B]">Amount</span>
-                        <span className="font-mono text-xs text-[#6B6B6B]">Staked: <span className="text-white">{stakedAmount.toLocaleString()}</span> GDN</span>
-                      </div>
-
-                      {/* Input */}
-                      <div className="relative mb-3">
-                        <input type="number" value={unstakeInput} onChange={e => setUnstakeInput(e.target.value)} placeholder="0.00"
-                          className="w-full bg-[#0A0A0A] border border-[#333] px-4 py-4 pr-16 font-mono text-xl text-white focus:border-[#00FF66] focus:outline-none transition-colors" />
-                        <span className="absolute right-4 top-1/2 -translate-y-1/2 font-mono text-sm text-[#6B6B6B]">GDN</span>
-                      </div>
-
-                      {/* Quick % */}
-                      <div className="grid grid-cols-4 gap-2 mb-5">
-                        {[{ pct: 0.25, label: '25%' }, { pct: 0.5, label: '50%' }, { pct: 0.75, label: '75%' }, { pct: 1, label: 'MAX' }].map(b => (
-                          <button key={b.label} onClick={() => setUnstakePercent(b.pct)} className="bg-[#0A0A0A] border border-[#333] py-2 font-mono text-[10px] text-[#6B6B6B] hover:text-white hover:border-[#333] transition-colors uppercase tracking-wider">{b.label}</button>
-                        ))}
-                      </div>
-
-                      {/* Warning */}
-                      {unstakeWarning && unstakeInput && (
-                        <div className="mb-4 bg-[#1a1500] border border-yellow-600/30 p-3 flex items-start gap-2">
-                          <AlertTriangle className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
-                          <div className="font-mono text-xs">
-                            <span className="text-yellow-400">Rank will drop</span>
-                            <span className="text-[#6B6B6B]"> to </span>
-                            <span className="text-white">{unstakePreview?.emoji} {unstakePreview?.label}</span>
-                            <span className="text-[#6B6B6B]"> ({unstakePreview?.feePercent}% fees)</span>
+                      {/* Unstake tab */}
+                      {hasStake ? (
+                        <>
+                          <div className="space-y-3 mb-5">
+                            <div className="bg-[#0A0A0A] border border-[#222] p-3">
+                              <div className="flex items-center justify-between font-mono text-xs">
+                                <span className="text-[#6B6B6B]">Staked amount</span>
+                                <span className="text-white">{formatGDN(staking.stakedAmount)} GDN</span>
+                              </div>
+                            </div>
+                            <div className="bg-[#0A0A0A] border border-[#222] p-3">
+                              <div className="flex items-center justify-between font-mono text-xs">
+                                <span className="text-[#6B6B6B]">Lock expiry</span>
+                                <span className={lockExpired ? 'text-[#00FF66]' : 'text-white'}>
+                                  {lockExpired ? 'Unlocked ✓' : formatDate(lockEnd)}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="bg-[#0A0A0A] border border-[#222] p-3">
+                              <div className="flex items-center justify-between font-mono text-xs">
+                                <span className="text-[#6B6B6B]">Boost</span>
+                                <span className="text-white">{boostDisplay}</span>
+                              </div>
+                            </div>
                           </div>
+
+                          {/* Early unstake warning */}
+                          {!lockExpired && slashPct > 0 && (
+                            <div className="mb-4 bg-[#1a1500] border border-yellow-600/30 p-3 flex items-start gap-2">
+                              <AlertTriangle className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+                              <div className="font-mono text-xs">
+                                <div className="text-yellow-400 mb-1">Early unstake penalty: {slashPct.toFixed(1)}%</div>
+                                <div className="text-[#6B6B6B]">
+                                  You will receive ~{(stakedAmt * (1 - slashPct / 100)).toFixed(2)} GDN instead of {stakedAmt.toFixed(2)} GDN.
+                                  Wait until {formatDate(lockEnd)} to avoid penalty.
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* CTA */}
+                          <button
+                            onClick={handleUnstake}
+                            disabled={txStep !== 'idle'}
+                            className="w-full border border-[#333] text-white font-mono text-sm font-bold py-4 hover:border-[#00FF66] hover:text-[#00FF66] transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                          >
+                            {txStep === 'unstaking' ? (
+                              <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Unstaking...</>
+                            ) : (
+                              <><Lock className="w-4 h-4" /> {lockExpired ? 'Unstake $GDN' : 'Early Unstake (Penalty)'}</>
+                            )}
+                          </button>
+
+                          <div className="mt-3 font-mono text-[10px] text-[#6B6B6B] text-center">
+                            {lockExpired ? 'No penalty — lock period ended' : `Early exit penalty: ${slashPct.toFixed(1)}%`}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-center py-8">
+                          <Lock className="w-8 h-8 text-[#6B6B6B] mx-auto mb-2" />
+                          <div className="font-mono text-sm text-[#6B6B6B]">Nothing to unstake</div>
+                          <div className="font-mono text-xs text-[#6B6B6B] mt-1">Stake GDN first to see unstake options</div>
                         </div>
                       )}
 
-                      {/* Preview (no warning) */}
-                      {unstakePreview && unstakeInput && parseFloat(unstakeInput) > 0 && !unstakeWarning && (
-                        <div className="mb-5 bg-[#0A0A0A] border border-[#222] p-3">
-                          <div className="flex items-center justify-between font-mono text-xs">
-                            <span className="text-[#6B6B6B]">Rank after</span>
-                            <span className="text-white">{unstakePreview.emoji} {unstakePreview.label} (no change)</span>
-                          </div>
+                      {/* Write error */}
+                      {staking.writeError && txStep === 'idle' && (
+                        <div className="mt-3 bg-[#1a0000] border border-red-600/30 p-3 font-mono text-xs text-red-400">
+                          {(staking.writeError as any)?.shortMessage || staking.writeError.message}
                         </div>
                       )}
-
-                      {/* CTA */}
-                      <button onClick={handleUnstake} disabled={stakingStep !== 'idle' || !unstakeInput || parseFloat(unstakeInput) <= 0 || parseFloat(unstakeInput) > stakedAmount}
-                        className="w-full border border-[#333] text-white font-mono text-sm font-bold py-4 hover:border-[#00FF66] hover:text-[#00FF66] transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-                        {stakingStep === 'unstaking' ? (<><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Unstaking...</>) :
-                         (<><Lock className="w-4 h-4" /> Unstake $GDN</>)}
-                      </button>
-
-                      <div className="mt-3 font-mono text-[10px] text-[#6B6B6B] text-center">
-                        Instant unstake · No cooldown period
-                      </div>
                     </>
                   )}
                 </div>
+              </div>
+            </div>
+
+            {/* LOCK DURATION COMPARISON TABLE */}
+            <div className="mb-8">
+              <h2 className="text-[#6B6B6B] font-mono text-xs uppercase tracking-widest flex items-center gap-2 mb-2">
+                <span className="text-[#00FF66]">&gt;</span> LOCK DURATIONS
+              </h2>
+              <div className="w-full h-[1px] bg-[#333] mt-2 mb-6 relative overflow-hidden"><div className="absolute top-0 left-0 w-1/4 h-full bg-[#00FF66] opacity-20 animate-glitch-h" /></div>
+
+              <div className="bg-[#111] border border-[#222] overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-[#222]">
+                      <th className="p-4 text-left font-mono text-[10px] uppercase tracking-widest text-[#6B6B6B]">Duration</th>
+                      <th className="p-4 text-center font-mono text-[10px] uppercase tracking-widest text-[#6B6B6B]">Boost</th>
+                      <th className="p-4 text-center font-mono text-[10px] uppercase tracking-widest text-[#6B6B6B]">Effective per 1000 GDN</th>
+                      <th className="p-4 text-center font-mono text-[10px] uppercase tracking-widest text-[#6B6B6B]">Early Exit Penalty</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {LOCK_OPTIONS.map((opt, i) => (
+                      <tr key={opt.months} className={`${i < LOCK_OPTIONS.length - 1 ? 'border-b border-[#222]' : ''} ${lockMonths === opt.months ? 'bg-[#00FF66]/5' : ''}`}>
+                        <td className="p-4 font-mono text-sm text-white">{opt.months} months</td>
+                        <td className="p-4 text-center font-mono text-sm text-[#00FF66]">{opt.boost}</td>
+                        <td className="p-4 text-center font-mono text-sm text-white">{(1000 * opt.boostBps / 10000).toLocaleString()} GDN</td>
+                        <td className="p-4 text-center font-mono text-sm text-yellow-400">up to 10%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
 
@@ -498,29 +649,22 @@ export default function StakePage() {
               </h2>
               <div className="w-full h-[1px] bg-[#333] mt-2 mb-6 relative overflow-hidden"><div className="absolute top-0 left-0 w-1/4 h-full bg-[#00FF66] opacity-20 animate-glitch-h" /></div>
 
-              {/* Desktop: comparison table */}
+              {/* Desktop table */}
               <div className="hidden md:block overflow-x-auto">
                 <div className="bg-[#111] border border-[#222]">
-                  {/* Header row */}
                   <div className="grid grid-cols-6 border-b border-[#222]">
                     <div className="p-4 font-mono text-[10px] uppercase tracking-widest text-[#6B6B6B]">PERK</div>
-                    {RANK_TIERS.map((tier, idx) => (
-                      <div key={tier.rank} className={`p-4 text-center border-l border-[#222] ${idx === currentRankIdx ? 'bg-[#00FF66]/5' : ''}`}>
-                        <div className="text-2xl mb-1">{tier.emoji}</div>
-                        <div className="font-mono text-xs text-white font-bold">{tier.label}</div>
-                        <div className="font-mono text-[9px] text-[#6B6B6B] mt-0.5">
-                          {tier.rank === 'none' ? 'No minimum' :
-                           tier.rank === 'platinum' ? '10% + $500K' :
-                           `${(tier.minRatio * 100).toFixed(0)}% ratio`}
-                        </div>
-                        {idx === currentRankIdx && (
+                    {TIER_LABELS.map((label, idx) => (
+                      <div key={label} className={`p-4 text-center border-l border-[#222] ${idx === tierIdx ? 'bg-[#00FF66]/5' : ''}`}>
+                        <div className="text-2xl mb-1">{TIER_EMOJIS[idx]}</div>
+                        <div className="font-mono text-xs text-white font-bold">{label}</div>
+                        {idx === tierIdx && (
                           <div className="mt-2 font-mono text-[9px] bg-[#00FF66] text-black px-2 py-0.5 inline-block uppercase tracking-wider font-bold">Current</div>
                         )}
                       </div>
                     ))}
                   </div>
 
-                  {/* Perk rows */}
                   {PERKS_TABLE.map((perk, pi) => (
                     <div key={perk.label} className={`grid grid-cols-6 ${pi < PERKS_TABLE.length - 1 ? 'border-b border-[#222]' : ''}`}>
                       <div className="p-3 flex items-center gap-2 font-mono text-xs text-[#6B6B6B]">
@@ -528,11 +672,11 @@ export default function StakePage() {
                         {perk.label}
                       </div>
                       {perk.values.map((val, vi) => (
-                        <div key={vi} className={`p-3 text-center border-l border-[#222] font-mono text-xs flex items-center justify-center ${vi === currentRankIdx ? 'bg-[#00FF66]/5' : ''}`}>
+                        <div key={vi} className={`p-3 text-center border-l border-[#222] font-mono text-xs flex items-center justify-center ${vi === tierIdx ? 'bg-[#00FF66]/5' : ''}`}>
                           {typeof val === 'boolean' ? (
                             val ? <Check className="w-4 h-4 text-[#00FF66]" /> : <X className="w-4 h-4 text-[#333]" />
                           ) : (
-                            <span className={`${vi > 0 && perk.label.includes('fee') && typeof val === 'string' ? 'text-[#00FF66]' : 'text-white'}`}>{val}</span>
+                            <span className={`${vi > 0 && perk.label.includes('fee') ? 'text-[#00FF66]' : 'text-white'}`}>{val}</span>
                           )}
                         </div>
                       ))}
@@ -541,28 +685,23 @@ export default function StakePage() {
                 </div>
               </div>
 
-              {/* Mobile: cards */}
+              {/* Mobile cards */}
               <div className="md:hidden space-y-3">
-                {RANK_TIERS.map((tier, idx) => {
-                  const isCurrent = idx === currentRankIdx;
-                  const isLocked = idx > currentRankIdx;
+                {TIER_LABELS.map((label, idx) => {
+                  const isCurrent = idx === tierIdx;
+                  const isLocked = idx > tierIdx;
                   return (
-                    <div key={tier.rank} className={`bg-[#111] border p-4 transition-all ${isCurrent ? 'border-[#00FF66] shadow-[0_0_20px_rgba(0,255,102,0.08)]' : 'border-[#222]'} ${isLocked ? 'opacity-60' : ''}`}>
+                    <div key={label} className={`bg-[#111] border p-4 transition-all ${isCurrent ? 'border-[#00FF66] shadow-[0_0_20px_rgba(0,255,102,0.08)]' : 'border-[#222]'} ${isLocked ? 'opacity-60' : ''}`}>
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-3">
-                          <span className="text-2xl">{tier.emoji}</span>
+                          <span className="text-2xl">{TIER_EMOJIS[idx]}</span>
                           <div>
-                            <span className="font-mono text-sm text-white font-bold">{tier.label}</span>
-                            <div className="font-mono text-[9px] text-[#6B6B6B]">
-                              {tier.rank === 'none' ? 'No minimum' :
-                               tier.rank === 'platinum' ? '10% ratio + $500K deposits' :
-                               `${(tier.minRatio * 100).toFixed(0)}% stake ratio`}
-                            </div>
+                            <span className="font-mono text-sm text-white font-bold">{label}</span>
                           </div>
                         </div>
                         {isCurrent && <span className="bg-[#00FF66] text-black font-mono text-[9px] font-bold px-2 py-0.5 uppercase tracking-wider">Current</span>}
                         {isLocked && <Lock className="w-3 h-3 text-[#6B6B6B]" />}
-                        {idx < currentRankIdx && <Check className="w-4 h-4 text-[#00FF66]" />}
+                        {idx < tierIdx && <Check className="w-4 h-4 text-[#00FF66]" />}
                       </div>
                       <div className="space-y-1.5">
                         {PERKS_TABLE.map(perk => {
@@ -593,9 +732,9 @@ export default function StakePage() {
               <div className="w-full h-[1px] bg-[#333] mt-2 mb-6 relative overflow-hidden"><div className="absolute top-0 left-0 w-1/4 h-full bg-[#00FF66] opacity-20 animate-glitch-h" /></div>
 
               <div className="grid md:grid-cols-3 gap-4">
-                <HowItWorksCard delay={0} step="01" title="Stake $GDN" desc="Deposit $GDN tokens into the staking contract. No lockup — withdraw anytime." icon={<Zap className="w-6 h-6" />} />
-                <HowItWorksCard delay={150} step="02" title="Climb Ranks" desc="Your rank is based on staked GDN value relative to your total vault deposits. Higher ratio = higher rank." icon={<TrendingUp className="w-6 h-6" />} />
-                <HowItWorksCard delay={300} step="03" title="Enjoy Perks" desc="Reduced fees on deposits & withdrawals, early vault access, governance voting, airdrop multipliers, and more." icon={<Gift className="w-6 h-6" />} />
+                <HowItWorksCard delay={0} step="01" title="Stake $GDN" desc="Deposit $GDN tokens with a lock period (3–12 months). Longer locks earn higher boost multipliers." icon={<Zap className="w-6 h-6" />} />
+                <HowItWorksCard delay={150} step="02" title="Earn & Climb" desc="Earn GDN rewards proportional to your effective stake. Your loyalty tier determines fee discounts across the protocol." icon={<TrendingUp className="w-6 h-6" />} />
+                <HowItWorksCard delay={300} step="03" title="Claim or Compound" desc="Claim pending rewards anytime. Unstake after lock expires with no penalty, or early unstake with up to 10% slash." icon={<Gift className="w-6 h-6" />} />
               </div>
             </div>
 
@@ -616,7 +755,6 @@ export default function StakePage() {
             </div>
           </>
         )}
-
       </main>
 
       <MobileNav />
