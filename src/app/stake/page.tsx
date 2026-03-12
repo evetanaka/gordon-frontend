@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import ConnectButton from '@/components/ConnectButton';
+import Navbar from '@/components/Navbar';
+import MobileNav from '@/components/MobileNav';
 import {
   ChevronDown, ExternalLink, Copy, Power, Check, X,
   LayoutDashboard, Layers, Trophy, Coins, Lock, Zap,
@@ -143,8 +145,6 @@ const HowItWorksCard = ({ delay, step, title, desc, icon }: { delay: number; ste
 export default function StakePage() {
   const [isConnected, setIsConnected] = useState(true);
   const [walletOpen, setWalletOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: '' });
   const walletRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -159,8 +159,7 @@ export default function StakePage() {
   const [activeTab, setActiveTab] = useState<'stake' | 'unstake'>('stake');
 
   useOnClickOutside(walletRef, () => setWalletOpen(false));
-  useOnClickOutside(menuRef, () => setMobileMenuOpen(false));
-  useEffect(() => { const h = () => setScrolled(window.scrollY > 20); window.addEventListener("scroll", h); return () => window.removeEventListener("scroll", h); }, []);
+  useOnClickOutside(menuRef, () => {});
 
   const showToast = (msg: string) => {
     setToast({ visible: true, message: msg });
@@ -228,18 +227,7 @@ export default function StakePage() {
     <div className="min-h-screen bg-[#0A0A0A] text-white">
       <Toast message={toast.message} visible={toast.visible} />
 
-      {/* NAVBAR */}
-      <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-[#0A0A0A]/90 backdrop-blur-md border-b border-[#333]' : 'bg-transparent border-b border-transparent'}`}>
-        <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="font-mono font-bold text-xl tracking-tighter text-white">GORDON<span className="text-[#00FF66]">.fi</span></Link>
-          <div className="hidden md:flex items-center gap-8">
-            {navLinks.map(l => (
-              <Link key={l.href} href={l.href} className={`font-mono text-xs uppercase tracking-widest transition-colors ${l.href === '/stake' ? 'text-[#00FF66]' : 'text-[#6B6B6B] hover:text-white'}`}>{l.label}</Link>
-            ))}
-          </div>
-          <ConnectButton />
-        </div>
-      </nav>
+      <Navbar />
 
       {/* CONTENT */}
       <main className="max-w-5xl mx-auto px-4 md:px-6 pt-24 pb-12 md:pb-24">
@@ -631,13 +619,7 @@ export default function StakePage() {
 
       </main>
 
-      {/* MOBILE BOTTOM NAV */}
-      <div className="md:hidden fixed bottom-0 left-0 w-full bg-[#0A0A0A] border-t border-[#333] z-50 flex justify-around items-center h-16 pb-safe">
-        <Link href="/dashboard" className="flex flex-col items-center gap-1 text-[#6B6B6B]"><LayoutDashboard className="w-5 h-5" /><span className="font-mono text-[10px] tracking-widest uppercase">Dash</span></Link>
-        <Link href="/vaults" className="flex flex-col items-center gap-1 text-[#6B6B6B]"><Layers className="w-5 h-5" /><span className="font-mono text-[10px] tracking-widest uppercase">Vaults</span></Link>
-        <Link href="/stake" className="flex flex-col items-center gap-1 text-[#00FF66]"><Zap className="w-5 h-5" /><span className="font-mono text-[10px] tracking-widest uppercase">Stake</span></Link>
-        <Link href="/token" className="flex flex-col items-center gap-1 text-[#6B6B6B]"><Coins className="w-5 h-5" /><span className="font-mono text-[10px] tracking-widest uppercase">$GDN</span></Link>
-      </div>
+      <MobileNav />
 
       <style jsx global>{`
         @keyframes glitch-h { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(100%); } }

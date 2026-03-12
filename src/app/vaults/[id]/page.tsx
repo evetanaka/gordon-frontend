@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import ConnectButton from '@/components/ConnectButton';
+import Navbar from '@/components/Navbar';
+import MobileNav from '@/components/MobileNav';
 import {
   ChevronDown, ExternalLink, Copy, Power, Activity, ArrowUpRight, ArrowLeft, ArrowRight,
   LayoutDashboard, Layers, Trophy, Coins, Check, Clock, AlertTriangle, Zap
@@ -343,7 +345,6 @@ export default function VaultDetailPage({ params }: { params: { id: string } }) 
 
   const [isConnected, setIsConnected] = useState(true);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
   const [chartPeriod, setChartPeriod] = useState('30D');
   const [showAllPositions, setShowAllPositions] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -354,11 +355,6 @@ export default function VaultDetailPage({ params }: { params: { id: string } }) 
   const dropdownRef = useRef<HTMLDivElement>(null);
   useOnClickOutside(dropdownRef, () => setDropdownOpen(false));
 
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   const showToast = useCallback((msg: string) => {
     setToastMessage(msg);
@@ -403,37 +399,8 @@ export default function VaultDetailPage({ params }: { params: { id: string } }) 
         ::-webkit-scrollbar-thumb:hover { background: #00FF66; }
       `}} />
 
-      {/* NAVBAR */}
-      <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-[#0A0A0A]/90 backdrop-blur-md border-b border-[#333]' : 'bg-transparent border-b border-transparent'}`}>
-        <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="font-mono font-bold text-xl tracking-tighter text-white cursor-pointer">
-            GORDON<span className="text-[#00FF66]">.fi</span>
-          </Link>
-          <div className="hidden md:flex items-center gap-8">
-            {[
-              { label: 'Dashboard', href: '/dashboard' },
-              { label: 'Vaults', href: '/vaults' },
-              { label: 'Leaderboard', href: '/leaderboard' },
-              { label: 'Stake', href: '/stake' },
-              { label: '$GDN', href: '/token' },
-            ].map(link => (
-              <Link key={link.label} href={link.href} className={`font-mono text-xs uppercase tracking-widest relative group transition-colors ${link.label === 'Vaults' ? 'text-white' : 'text-[#6B6B6B] hover:text-[#00FF66]'}`}>
-                {link.label}
-                <span className={`absolute -bottom-1 left-0 h-[1px] transition-all duration-300 ${link.label === 'Vaults' ? 'w-full bg-white' : 'w-0 bg-[#00FF66] group-hover:w-full'}`} />
-              </Link>
-            ))}
-          </div>
-          <ConnectButton />
-        </div>
-      </nav>
-
-      {/* MOBILE BOTTOM NAV */}
-      <div className="md:hidden fixed bottom-0 left-0 w-full bg-[#0A0A0A] border-t border-[#333] z-50 flex justify-around items-center h-16 pb-safe">
-        <Link href="/dashboard" className="flex flex-col items-center gap-1 text-[#6B6B6B]"><LayoutDashboard className="w-5 h-5" /><span className="font-mono text-[10px] tracking-widest uppercase">Dash</span></Link>
-        <Link href="/vaults" className="flex flex-col items-center gap-1 text-white"><Layers className="w-5 h-5" /><span className="font-mono text-[10px] tracking-widest uppercase">Vaults</span></Link>
-        <Link href="/stake" className="flex flex-col items-center gap-1 text-[#6B6B6B]"><Zap className="w-5 h-5" /><span className="font-mono text-[10px] tracking-widest uppercase">Stake</span></Link>
-        <Link href="/token" className="flex flex-col items-center gap-1 text-[#6B6B6B]"><Coins className="w-5 h-5" /><span className="font-mono text-[10px] tracking-widest uppercase">$GDN</span></Link>
-      </div>
+      <Navbar />
+      <MobileNav />
 
       {/* MAIN */}
       <main className="max-w-5xl mx-auto px-4 md:px-6 pt-24 pb-12 md:pb-24">

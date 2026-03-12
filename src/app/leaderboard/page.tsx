@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import ConnectButton from '@/components/ConnectButton';
+import Navbar from '@/components/Navbar';
+import MobileNav from '@/components/MobileNav';
 import {
   ChevronDown, ChevronUp, ExternalLink, Copy, Power, Activity, ArrowUpRight, ArrowRight,
   LayoutDashboard, Layers, Trophy, Coins, Search, X, Star, Check, TrendingUp, Zap
@@ -109,7 +111,6 @@ type Tab = 'all' | 'top50' | 'whales' | 'rising' | 'watchlist';
 export default function LeaderboardPage() {
   const [isConnected, setIsConnected] = useState(true);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('all');
   const [timePeriod, setTimePeriod] = useState('30D');
   const [searchQuery, setSearchQuery] = useState('');
@@ -123,12 +124,6 @@ export default function LeaderboardPage() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   useOnClickOutside(dropdownRef, () => setDropdownOpen(false));
-
-  useEffect(() => {
-    const h = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', h);
-    return () => window.removeEventListener('scroll', h);
-  }, []);
 
   useEffect(() => {
     try { setWatchlist(JSON.parse(localStorage.getItem('gordon_watchlist') || '[]')); } catch { setWatchlist([]); }
@@ -204,28 +199,8 @@ export default function LeaderboardPage() {
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}} />
 
-      {/* NAVBAR */}
-      <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-[#0A0A0A]/90 backdrop-blur-md border-b border-[#333]' : 'bg-transparent border-b border-transparent'}`}>
-        <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="font-mono font-bold text-xl tracking-tighter text-white">GORDON<span className="text-[#00FF66]">.fi</span></Link>
-          <div className="hidden md:flex items-center gap-8">
-            {[{ l: 'Dashboard', h: '/dashboard' }, { l: 'Vaults', h: '/vaults' }, { l: 'Leaderboard', h: '/leaderboard' }, { l: 'Stake', h: '/stake' }, { l: '$GDN', h: '/token' }].map(link => (
-              <Link key={link.l} href={link.h} className={`font-mono text-xs uppercase tracking-widest relative group transition-colors ${link.l === 'Leaderboard' ? 'text-white' : 'text-[#6B6B6B] hover:text-[#00FF66]'}`}>
-                {link.l}<span className={`absolute -bottom-1 left-0 h-[1px] transition-all duration-300 ${link.l === 'Leaderboard' ? 'w-full bg-white' : 'w-0 bg-[#00FF66] group-hover:w-full'}`} />
-              </Link>
-            ))}
-          </div>
-          <ConnectButton />
-        </div>
-      </nav>
-
-      {/* MOBILE NAV */}
-      <div className="md:hidden fixed bottom-0 left-0 w-full bg-[#0A0A0A] border-t border-[#333] z-50 flex justify-around items-center h-16 pb-safe">
-        <Link href="/dashboard" className="flex flex-col items-center gap-1 text-[#6B6B6B]"><LayoutDashboard className="w-5 h-5" /><span className="font-mono text-[10px] tracking-widest uppercase">Dash</span></Link>
-        <Link href="/vaults" className="flex flex-col items-center gap-1 text-[#6B6B6B]"><Layers className="w-5 h-5" /><span className="font-mono text-[10px] tracking-widest uppercase">Vaults</span></Link>
-        <Link href="/stake" className="flex flex-col items-center gap-1 text-[#6B6B6B]"><Zap className="w-5 h-5" /><span className="font-mono text-[10px] tracking-widest uppercase">Stake</span></Link>
-        <Link href="/token" className="flex flex-col items-center gap-1 text-[#6B6B6B]"><Coins className="w-5 h-5" /><span className="font-mono text-[10px] tracking-widest uppercase">$GDN</span></Link>
-      </div>
+      <Navbar />
+      <MobileNav />
 
       {/* MAIN */}
       <main className="max-w-5xl mx-auto px-4 md:px-6 pt-24 pb-12 md:pb-24">

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import ConnectButton from '@/components/ConnectButton';
+import Navbar from '@/components/Navbar';
 import { ArrowRight, ExternalLink, Activity, ChevronRight, Menu, X, Check } from 'lucide-react';
 
 // --- CUSTOM HOOKS ---
@@ -327,13 +328,10 @@ const LeaderboardRow = ({ row, index }: { row: any; index: number }) => {
 // --- MAIN APP ---
 
 export default function Home() {
-  const [scrolled, setScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
       document.documentElement.style.setProperty('--scroll-y', `${window.scrollY}px`);
     };
     const handleResize = () => {
@@ -390,56 +388,7 @@ export default function Home() {
       `}} />
 
       {/* SECTION 1: STICKY NAVBAR */}
-      <nav className={`fixed top-0 left-0 w-full z-40 transition-all duration-300 ${scrolled ? 'bg-[#0A0A0A]/80 backdrop-blur-md border-b border-[#333]' : 'bg-transparent'}`}>
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="font-mono font-bold text-2xl tracking-tighter text-white">
-            GORDON<span className="text-[#00FF66]">.fi</span>
-          </div>
-          {!isMobile && (
-            <div className="hidden md:flex items-center gap-8 font-mono text-sm tracking-widest uppercase">
-              {[
-                { label: 'Vaults', href: '/vaults' },
-                { label: 'Leaderboard', href: '/leaderboard' },
-                { label: 'Docs', href: '#' },
-                { label: '$GDN', href: '/token' },
-              ].map(link => (
-                <Link key={link.label} href={link.href} className="text-[#6B6B6B] hover:text-[#00FF66] relative group transition-colors">
-                  {link.label}
-                  <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-[#00FF66] transition-all duration-300 group-hover:w-full" />
-                </Link>
-              ))}
-            </div>
-          )}
-          <div className="flex items-center gap-4">
-            {!isMobile ? (
-              <div className="flex items-center gap-3">
-                <ConnectButton />
-                <Link href="/dashboard" className="bg-[#00FF66] text-black font-mono font-bold text-sm px-6 py-3 uppercase tracking-wider hover:bg-white transition-colors group flex items-center gap-2">
-                  Launch App
-                  <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                </Link>
-              </div>
-            ) : (
-              <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-[#00FF66]">
-                {mobileMenuOpen ? <X /> : <Menu />}
-              </button>
-            )}
-          </div>
-        </div>
-        {isMobile && mobileMenuOpen && (
-          <div className="absolute top-20 left-0 w-full bg-[#0A0A0A] border-b border-[#333] p-4 flex flex-col gap-4 font-mono uppercase tracking-widest text-sm z-50">
-            {[
-              { label: 'Vaults', href: '/vaults' },
-              { label: 'Leaderboard', href: '/leaderboard' },
-              { label: 'Docs', href: '#' },
-              { label: '$GDN', href: '/token' },
-            ].map(link => (
-              <Link key={link.label} href={link.href} className="text-[#6B6B6B] py-2 border-b border-[#222]">{link.label}</Link>
-            ))}
-            <Link href="/dashboard" className="bg-[#00FF66] text-black font-bold py-3 mt-4 w-full block text-center">LAUNCH APP -{'>'}</Link>
-          </div>
-        )}
-      </nav>
+      <Navbar variant="landing" />
 
       {/* SECTION 2: HERO */}
       <section className="relative w-full min-h-screen bg-[#0A0A0A] flex items-center pt-20 overflow-hidden">
