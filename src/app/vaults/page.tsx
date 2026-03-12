@@ -2,6 +2,10 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import ConnectButton from '@/components/ConnectButton';
+import { useAccount } from 'wagmi';
+import { useVault } from '@/hooks/useVault';
+import { CONTRACTS } from '@/config/contracts';
 import {
   ChevronDown, ExternalLink, Copy, Power, Activity, ArrowUpRight, ArrowRight,
   LayoutDashboard, Layers, Trophy, Coins, Check, Lock, Clock, TrendingUp,
@@ -84,87 +88,72 @@ const Toast = ({ message, visible }: { message: string; visible: boolean }) => {
 
 // --- VAULT DATA ---
 
-interface VaultData {
+interface VaultConfig {
   id: string;
   name: string;
   subtitle: string;
   status: 'live' | 'soon';
-  apy: number;
-  tvl: number;
+  mockApy: number;
   riskLevel: number;
   riskLabel: string;
   tracked: number;
   strategy: string;
   tags: string[];
-  userDeposit: number;
-  userPnl: number;
-  change24h: number;
+  address: `0x${string}`;
 }
 
-const vaultsData: VaultData[] = [
+const VAULT_CONFIGS: VaultConfig[] = [
   {
-    id: 'alpha',
-    name: 'Alpha Vault',
-    subtitle: 'Top 50 Traders · Diversified',
+    id: 'crypto',
+    name: 'Crypto Vault',
+    subtitle: 'Top Crypto Traders · Diversified',
     status: 'live',
-    apy: 47.2,
-    tvl: 2400000,
+    mockApy: 47.2,
     riskLevel: 2,
     riskLabel: 'Medium',
     tracked: 50,
-    strategy: 'Copies the top 50 most profitable Polymarket traders. Diversified across political, crypto, and macro markets.',
-    tags: ['DIVERSIFIED', 'AUTO-COMPOUND', 'BLUE CHIP'],
-    userDeposit: 8000,
-    userPnl: 1847,
-    change24h: 2.4,
+    strategy: 'Copies the top crypto prediction market traders. Diversified across BTC, ETH, and altcoin markets.',
+    tags: ['CRYPTO', 'AUTO-COMPOUND', 'DIVERSIFIED'],
+    address: CONTRACTS.CryptoVault as `0x${string}`,
   },
   {
-    id: 'degen',
-    name: 'Degen Vault',
-    subtitle: 'Top 5 Whales · High Conviction',
+    id: 'sport',
+    name: 'Sport Vault',
+    subtitle: 'Sports Markets · High Volume',
     status: 'live',
-    apy: 89.1,
-    tvl: 890000,
-    riskLevel: 4,
-    riskLabel: 'High',
-    tracked: 5,
-    strategy: 'Mirrors the top 5 highest-conviction whale wallets. Concentrated bets, higher risk/reward.',
-    tags: ['HIGH RISK', 'WHALE TRACK', 'CONCENTRATED'],
-    userDeposit: 4400,
-    userPnl: 1000,
-    change24h: -1.2,
+    mockApy: 89.1,
+    riskLevel: 3,
+    riskLabel: 'Medium-High',
+    tracked: 30,
+    strategy: 'Mirrors the top sports prediction market traders. High-frequency bets across major leagues.',
+    tags: ['SPORTS', 'HIGH VOLUME', 'MOMENTUM'],
+    address: CONTRACTS.SportVault as `0x${string}`,
   },
   {
-    id: 'stable',
-    name: 'Stable Vault',
-    subtitle: 'Market Neutral · Low Volatility',
-    status: 'soon',
-    apy: 12.5,
-    tvl: 0,
+    id: 'finance',
+    name: 'Finance Vault',
+    subtitle: 'Macro & Finance · Institutional',
+    status: 'live',
+    mockApy: 35.5,
     riskLevel: 1,
     riskLabel: 'Low',
     tracked: 100,
-    strategy: 'Delta-neutral strategies across prediction markets. Designed for capital preservation with steady yield.',
-    tags: ['LOW RISK', 'DELTA NEUTRAL', 'STABLE'],
-    userDeposit: 0,
-    userPnl: 0,
-    change24h: 0,
+    strategy: 'Tracks institutional-grade wallets on macro and finance prediction markets. Conservative approach.',
+    tags: ['MACRO', 'LOW RISK', 'INSTITUTIONAL'],
+    address: CONTRACTS.FinanceVault as `0x${string}`,
   },
   {
-    id: 'momentum',
-    name: 'Momentum Vault',
-    subtitle: 'Trend Following · Multi-Market',
-    status: 'soon',
-    apy: 63.8,
-    tvl: 0,
-    riskLevel: 3,
-    riskLabel: 'Medium-High',
-    tracked: 20,
-    strategy: 'Follows momentum signals from the top 20 trend-following wallets across all Polymarket categories.',
-    tags: ['TREND', 'MULTI-MARKET', 'MOMENTUM'],
-    userDeposit: 0,
-    userPnl: 0,
-    change24h: 0,
+    id: 'politic',
+    name: 'Politic Vault',
+    subtitle: 'Political Markets · High Conviction',
+    status: 'live',
+    mockApy: 63.8,
+    riskLevel: 4,
+    riskLabel: 'High',
+    tracked: 10,
+    strategy: 'Concentrated bets on political prediction markets. High conviction, higher risk/reward.',
+    tags: ['POLITICS', 'HIGH RISK', 'CONCENTRATED'],
+    address: CONTRACTS.PoliticVault as `0x${string}`,
   },
 ];
 
@@ -186,14 +175,14 @@ const RiskBar = ({ level }: { level: number }) => (
 );
 
 const VaultCardItem = ({ vault, index, isConnected, showToast }: {
-  vault: VaultData;
+  vault: VaultConfig & { tvl: number | null; isLoading: boolean; userShares: bigint | undefined };
   index: number;
   isConnected: boolean;
   showToast: (msg: string) => void;
 }) => {
   const [ref, isVisible] = useScrollReveal({ delay: index * 150 });
   const isSoon = vault.status === 'soon';
-  const hasPosition = vault.userDeposit > 0;
+  const hasPosition = isConnected && vault.userShares && vault.userShares > BigInt(0);
 
   return (
     <div
@@ -224,7 +213,7 @@ const VaultCardItem = ({ vault, index, isConnected, showToast }: {
           </div>
           {!isSoon && (
             <div className="text-right">
-              <div className="font-sans font-bold text-2xl text-[#00FF66]">{vault.apy}%</div>
+              <div className="font-sans font-bold text-2xl text-[#00FF66]">{vault.mockApy}%</div>
               <div className="font-mono text-[10px] text-[#6B6B6B] uppercase tracking-widest">APY</div>
             </div>
           )}
@@ -248,7 +237,11 @@ const VaultCardItem = ({ vault, index, isConnected, showToast }: {
         <div>
           <div className="font-mono text-[9px] text-[#6B6B6B] uppercase tracking-widest mb-1">TVL</div>
           <div className="font-mono text-sm text-white">
-            {isSoon ? '—' : `$${(vault.tvl / 1000000).toFixed(1)}M`}
+            {isSoon ? '—' : vault.isLoading ? (
+              <span className="inline-block w-16 h-4 bg-[#222] animate-pulse" />
+            ) : vault.tvl !== null ? (
+              vault.tvl >= 1000000 ? `$${(vault.tvl / 1000000).toFixed(2)}M` : `$${vault.tvl.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+            ) : '—'}
           </div>
         </div>
         <div>
@@ -265,21 +258,10 @@ const VaultCardItem = ({ vault, index, isConnected, showToast }: {
       </div>
 
       {/* User Position (if connected & has deposit) */}
-      {isConnected && hasPosition && (
+      {hasPosition && (
         <div className="px-5 py-3 border-t border-[#00FF66]/20 bg-[#00FF66]/[0.02]">
           <div className="font-mono text-[9px] text-[#00FF66] uppercase tracking-widest mb-2">YOUR POSITION</div>
-          <div className="flex justify-between items-center">
-            <div>
-              <span className="font-mono text-sm text-white">${vault.userDeposit.toLocaleString()}</span>
-              <span className="font-mono text-[10px] text-[#6B6B6B] ml-2">deposited</span>
-            </div>
-            <div className={`font-mono text-sm ${vault.userPnl >= 0 ? 'text-[#00FF66]' : 'text-[#FF3B3B]'}`}>
-              {vault.userPnl >= 0 ? '+' : ''}${vault.userPnl.toLocaleString()}
-              <span className="text-[10px] ml-1">
-                ({vault.userPnl >= 0 ? '+' : ''}{((vault.userPnl / vault.userDeposit) * 100).toFixed(1)}%)
-              </span>
-            </div>
-          </div>
+          <div className="font-mono text-sm text-white">Active</div>
         </div>
       )}
 
@@ -292,18 +274,9 @@ const VaultCardItem = ({ vault, index, isConnected, showToast }: {
           >
             <Clock className="w-3 h-3" /> Join Waitlist
           </button>
-        ) : hasPosition ? (
-          <div className="grid grid-cols-2 gap-3">
-            <Link href={`/vaults/${vault.id}`} className="py-3 bg-[#00FF66] text-black font-mono font-bold text-xs uppercase tracking-wider hover:bg-white transition-colors text-center">
-              Deposit More
-            </Link>
-            <Link href={`/vaults/${vault.id}`} className="py-3 border border-[#333] text-white font-mono text-xs uppercase tracking-widest hover:border-[#00FF66] hover:text-[#00FF66] transition-colors text-center">
-              Manage
-            </Link>
-          </div>
         ) : (
           <Link href={`/vaults/${vault.id}`} className="w-full py-3 bg-[#00FF66] text-black font-mono font-bold text-xs uppercase tracking-wider hover:bg-white transition-colors flex items-center justify-center gap-2">
-            Deposit <ArrowRight className="w-3 h-3" />
+            {hasPosition ? 'Manage' : 'Deposit'} <ArrowRight className="w-3 h-3" />
           </Link>
         )}
       </div>
@@ -314,7 +287,7 @@ const VaultCardItem = ({ vault, index, isConnected, showToast }: {
 // --- MAIN ---
 
 export default function VaultsPage() {
-  const [isConnected, setIsConnected] = useState(true);
+  const { isConnected } = useAccount();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
@@ -341,14 +314,44 @@ export default function VaultsPage() {
     setTimeout(() => setToastVisible(false), 3000);
   }, []);
 
+  // On-chain vault data
+  const cryptoVault = useVault(CONTRACTS.CryptoVault as `0x${string}`);
+  const sportVault = useVault(CONTRACTS.SportVault as `0x${string}`);
+  const financeVault = useVault(CONTRACTS.FinanceVault as `0x${string}`);
+  const politicVault = useVault(CONTRACTS.PoliticVault as `0x${string}`);
+
+  const vaultHooks: Record<string, ReturnType<typeof useVault>> = {
+    crypto: cryptoVault,
+    sport: sportVault,
+    finance: financeVault,
+    politic: politicVault,
+  };
+
+  // Build enriched vault list
+  const vaultsWithData = VAULT_CONFIGS.map(config => {
+    const hook = vaultHooks[config.id];
+    const tvlRaw = hook?.totalAssets;
+    const tvlNum = tvlRaw !== undefined ? Number(tvlRaw) / 1e6 : null; // USDC has 6 decimals
+    return {
+      ...config,
+      tvl: tvlNum,
+      isLoading: hook?.isLoading ?? false,
+      userShares: hook?.userPosition ? hook.userPosition[0] : undefined,
+    };
+  });
+
+  // Compute total TVL for banner
+  const totalTvl = vaultsWithData.reduce((sum, v) => sum + (v.tvl ?? 0), 0);
+  const anyLoading = vaultsWithData.some(v => v.isLoading);
+
   const [tvlRef, tvl] = useCountUp(3.29, 2000, 0, 2, '$', 'M');
-  const [vaultsRef, activeVaults] = useCountUp(2, 1500, 0, 0);
-  const [apyRef, avgApy] = useCountUp(68.2, 2000, 0, 1, '', '%');
+  const [vaultsRef, activeVaults] = useCountUp(4, 1500, 0, 0);
+  const [apyRef, avgApy] = useCountUp(58.9, 2000, 0, 1, '', '%');
 
   // Filtering & Sorting
-  let filteredVaults = vaultsData;
+  let filteredVaults = vaultsWithData;
   if (activeTab === 'my') {
-    filteredVaults = vaultsData.filter(v => v.userDeposit > 0);
+    filteredVaults = vaultsWithData.filter(v => v.userShares && v.userShares > BigInt(0));
   } else if (activeTab === 'deprecated') {
     filteredVaults = [];
   }
@@ -357,15 +360,15 @@ export default function VaultsPage() {
     if (a.status === 'soon') return 1;
     if (b.status === 'soon') return -1;
     switch (sortBy) {
-      case 'APY': return b.apy - a.apy;
-      case 'TVL': return b.tvl - a.tvl;
+      case 'APY': return b.mockApy - a.mockApy;
+      case 'TVL': return (b.tvl ?? 0) - (a.tvl ?? 0);
       case 'Risk': return b.riskLevel - a.riskLevel;
       case 'Newest': return 0;
       default: return 0;
     }
   });
 
-  const myVaultsCount = vaultsData.filter(v => v.userDeposit > 0).length;
+  const myVaultsCount = vaultsWithData.filter(v => v.userShares && v.userShares > BigInt(0)).length;
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white font-sans selection:bg-[#00FF66] selection:text-black pb-24 md:pb-12">
@@ -404,40 +407,7 @@ export default function VaultsPage() {
               </Link>
             ))}
           </div>
-          <div>
-            {isConnected ? (
-              <div className="relative" ref={dropdownRef}>
-                <button onClick={() => setDropdownOpen(!dropdownOpen)} className="flex items-center gap-2 bg-[#111] border border-[#333] px-3 py-1.5 hover:border-[#00FF66] transition-colors group">
-                  <div className="w-4 h-4 rounded-full bg-gradient-to-tr from-[#00FF66] via-blue-500 to-purple-600 relative">
-                    <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#00FF66] border border-[#111]" />
-                  </div>
-                  <span className="font-mono text-xs text-white hidden md:inline">0x71C...49A2</span>
-                  <ChevronDown className="w-3 h-3 text-[#6B6B6B] group-hover:text-[#00FF66] transition-colors" />
-                </button>
-                {dropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-[#111] border border-[#333] shadow-[0_0_20px_rgba(0,0,0,0.5)] flex flex-col font-mono text-xs z-50 animate-fade-in-up" style={{animationDuration: '0.2s'}}>
-                    <button className="flex items-center gap-2 px-4 py-3 text-[#6B6B6B] hover:text-white hover:bg-[#222] text-left transition-colors">
-                      <Copy className="w-3 h-3" /> Copy Address
-                    </button>
-                    <button className="flex items-center justify-between px-4 py-3 text-[#6B6B6B] hover:text-white hover:bg-[#222] text-left border-t border-[#222] transition-colors">
-                      <span className="flex items-center gap-2"><ExternalLink className="w-3 h-3" /> Etherscan</span>
-                      <ArrowUpRight className="w-3 h-3" />
-                    </button>
-                    <button className="flex items-center gap-2 px-4 py-3 text-[#6B6B6B] hover:text-white hover:bg-[#222] text-left border-t border-[#222] transition-colors">
-                      <Activity className="w-3 h-3" /> Switch Network
-                    </button>
-                    <button onClick={() => { setIsConnected(false); setDropdownOpen(false); }} className="flex items-center gap-2 px-4 py-3 text-[#FF3B3B] hover:bg-[#FF3B3B]/10 text-left border-t border-[#222] transition-colors">
-                      <Power className="w-3 h-3" /> Disconnect
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <button onClick={() => setIsConnected(true)} className="bg-[#00FF66] text-black font-mono font-bold text-xs px-4 py-2 uppercase tracking-wider hover:bg-white transition-colors">
-                Connect
-              </button>
-            )}
-          </div>
+          <ConnectButton />
         </div>
       </nav>
 
@@ -471,7 +441,9 @@ export default function VaultsPage() {
           <div className="flex w-full md:w-auto justify-between md:justify-start gap-4 md:gap-12">
             <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-3">
               <span className="text-[#6B6B6B] font-mono text-[10px] uppercase tracking-widest">Total TVL:</span>
-              <span ref={tvlRef} className="font-sans font-bold text-white text-lg md:text-base">{tvl}</span>
+              <span ref={tvlRef} className="font-sans font-bold text-white text-lg md:text-base">
+                {anyLoading ? tvl : totalTvl >= 1000000 ? `$${(totalTvl / 1000000).toFixed(2)}M` : `$${totalTvl.toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
+              </span>
             </div>
             <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-3">
               <span className="text-[#6B6B6B] font-mono text-[10px] uppercase tracking-widest">Active Vaults:</span>

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import ConnectButton from '@/components/ConnectButton';
 import { ArrowRight, ExternalLink, Activity, ChevronRight, Menu, X, Check } from 'lucide-react';
 
 // --- CUSTOM HOOKS ---
@@ -411,10 +412,13 @@ export default function Home() {
           )}
           <div className="flex items-center gap-4">
             {!isMobile ? (
-              <Link href="/dashboard" className="bg-[#00FF66] text-black font-mono font-bold text-sm px-6 py-3 uppercase tracking-wider hover:bg-white transition-colors group flex items-center gap-2">
-                Launch App
-                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-              </Link>
+              <div className="flex items-center gap-3">
+                <ConnectButton />
+                <Link href="/dashboard" className="bg-[#00FF66] text-black font-mono font-bold text-sm px-6 py-3 uppercase tracking-wider hover:bg-white transition-colors group flex items-center gap-2">
+                  Launch App
+                  <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                </Link>
+              </div>
             ) : (
               <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-[#00FF66]">
                 {mobileMenuOpen ? <X /> : <Menu />}

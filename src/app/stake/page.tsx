@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import ConnectButton from '@/components/ConnectButton';
 import {
   ChevronDown, ExternalLink, Copy, Power, Check, X,
   LayoutDashboard, Layers, Trophy, Coins, Lock, Zap,
@@ -236,26 +237,7 @@ export default function StakePage() {
               <Link key={l.href} href={l.href} className={`font-mono text-xs uppercase tracking-widest transition-colors ${l.href === '/stake' ? 'text-[#00FF66]' : 'text-[#6B6B6B] hover:text-white'}`}>{l.label}</Link>
             ))}
           </div>
-          <div className="flex items-center gap-3">
-            {isConnected ? (
-              <div ref={walletRef} className="relative">
-                <button onClick={() => setWalletOpen(!walletOpen)} className="flex items-center gap-2 bg-[#111] border border-[#333] px-3 py-1.5 font-mono text-xs text-white hover:border-[#00FF66] transition-colors">
-                  <div className="w-4 h-4 rounded-full bg-gradient-to-br from-[#00FF66] to-[#0066FF]" />
-                  0x71C...49A2
-                  <ChevronDown className="w-3 h-3 text-[#6B6B6B]" />
-                </button>
-                {walletOpen && (
-                  <div className="absolute right-0 top-full mt-1 bg-[#111] border border-[#333] min-w-[180px] z-50">
-                    <button onClick={() => { copyToClipboard('0x71C7a3d84900FF6649A2'); setWalletOpen(false); }} className="w-full text-left px-4 py-2 font-mono text-xs text-[#6B6B6B] hover:text-white hover:bg-[#1a1a1a] flex items-center gap-2"><Copy className="w-3 h-3" /> Copy address</button>
-                    <a href="https://polygonscan.com" target="_blank" rel="noreferrer" className="block px-4 py-2 font-mono text-xs text-[#6B6B6B] hover:text-white hover:bg-[#1a1a1a] flex items-center gap-2"><ExternalLink className="w-3 h-3" /> Polygonscan</a>
-                    <button onClick={() => { setIsConnected(false); setWalletOpen(false); }} className="w-full text-left px-4 py-2 font-mono text-xs text-[#FF3B3B] hover:bg-[#1a1a1a] flex items-center gap-2"><Power className="w-3 h-3" /> Disconnect</button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <button onClick={() => setIsConnected(true)} className="bg-[#00FF66] text-black font-mono font-bold text-xs px-4 py-2 uppercase tracking-wider hover:bg-white transition-colors">Connect</button>
-            )}
-          </div>
+          <ConnectButton />
         </div>
       </nav>
 

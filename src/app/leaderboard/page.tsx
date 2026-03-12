@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import Link from 'next/link';
+import ConnectButton from '@/components/ConnectButton';
 import {
   ChevronDown, ChevronUp, ExternalLink, Copy, Power, Activity, ArrowUpRight, ArrowRight,
   LayoutDashboard, Layers, Trophy, Coins, Search, X, Star, Check, TrendingUp, Zap
@@ -214,27 +215,7 @@ export default function LeaderboardPage() {
               </Link>
             ))}
           </div>
-          <div>
-            {isConnected ? (
-              <div className="relative" ref={dropdownRef}>
-                <button onClick={() => setDropdownOpen(!dropdownOpen)} className="flex items-center gap-2 bg-[#111] border border-[#333] px-3 py-1.5 hover:border-[#00FF66] transition-colors group">
-                  <div className="w-4 h-4 rounded-full bg-gradient-to-tr from-[#00FF66] via-blue-500 to-purple-600 relative"><div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#00FF66] border border-[#111]" /></div>
-                  <span className="font-mono text-xs text-white hidden md:inline">0x71C...49A2</span>
-                  <ChevronDown className="w-3 h-3 text-[#6B6B6B] group-hover:text-[#00FF66] transition-colors" />
-                </button>
-                {dropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-[#111] border border-[#333] shadow-[0_0_20px_rgba(0,0,0,0.5)] flex flex-col font-mono text-xs z-50 animate-fade-in-up" style={{animationDuration:'0.2s'}}>
-                    <button className="flex items-center gap-2 px-4 py-3 text-[#6B6B6B] hover:text-white hover:bg-[#222] text-left transition-colors"><Copy className="w-3 h-3" /> Copy Address</button>
-                    <button className="flex items-center justify-between px-4 py-3 text-[#6B6B6B] hover:text-white hover:bg-[#222] text-left border-t border-[#222] transition-colors"><span className="flex items-center gap-2"><ExternalLink className="w-3 h-3" /> Etherscan</span><ArrowUpRight className="w-3 h-3" /></button>
-                    <button className="flex items-center gap-2 px-4 py-3 text-[#6B6B6B] hover:text-white hover:bg-[#222] text-left border-t border-[#222] transition-colors"><Activity className="w-3 h-3" /> Switch Network</button>
-                    <button onClick={() => { setIsConnected(false); setDropdownOpen(false); }} className="flex items-center gap-2 px-4 py-3 text-[#FF3B3B] hover:bg-[#FF3B3B]/10 text-left border-t border-[#222] transition-colors"><Power className="w-3 h-3" /> Disconnect</button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <button onClick={() => setIsConnected(true)} className="bg-[#00FF66] text-black font-mono font-bold text-xs px-4 py-2 uppercase tracking-wider hover:bg-white transition-colors">Connect</button>
-            )}
-          </div>
+          <ConnectButton />
         </div>
       </nav>
 
