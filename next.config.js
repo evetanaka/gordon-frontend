@@ -13,7 +13,11 @@ const nextConfig = {
       'pino-pretty': false,
       encoding: false,
     }
-    config.externals.push('pino-pretty', '@react-native-async-storage/async-storage')
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@react-native-async-storage/async-storage': false,
+      'pino-pretty': false,
+    }
     return config
   },
 }
