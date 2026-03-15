@@ -8,7 +8,7 @@ import { type Address, parseUnits, formatUnits } from 'viem';
 import { useToken, useAllowance } from '@/hooks/useToken';
 import { useVault } from '@/hooks/useVault';
 import VaultABI from '@/config/abis/GordonVaultETH.json';
-import MockUSDCABI from '@/config/abis/MockUSDC.json';
+import USDCABI from '@/config/abis/USDC.json';
 import { CONTRACTS } from '@/config/contracts';
 
 // --- LOYALTY RANK SYSTEM (kept for UI — reads mock GDN staking for now) ---
@@ -185,8 +185,8 @@ export function DepositModal({ isOpen, onClose, vaultAddress, vaultName, shareSy
   const handleApprove = () => {
     setTxError(null);
     writeApprove({
-      address: CONTRACTS.MockUSDC as Address,
-      abi: MockUSDCABI,
+      address: CONTRACTS.USDC as Address,
+      abi: USDCABI,
       functionName: 'approve',
       args: [vaultAddress, amountBigInt],
     });

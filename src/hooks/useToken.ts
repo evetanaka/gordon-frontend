@@ -3,13 +3,13 @@
 import { useReadContract, useWriteContract, useAccount } from 'wagmi'
 import { type Address, parseUnits } from 'viem'
 import GDNTokenABI from '@/config/abis/GDNToken.json'
-import MockUSDCABI from '@/config/abis/MockUSDC.json'
+import USDCABI from '@/config/abis/USDC.json'
 import { CONTRACTS } from '@/config/contracts'
 
 export function useAllowance(token: 'GDN' | 'USDC', spender: Address | undefined) {
   const { address } = useAccount()
-  const tokenAddress = (token === 'GDN' ? CONTRACTS.GDNToken : CONTRACTS.MockUSDC) as Address
-  const abi = token === 'GDN' ? GDNTokenABI : MockUSDCABI
+  const tokenAddress = (token === 'GDN' ? CONTRACTS.GDNToken : CONTRACTS.USDC) as Address
+  const abi = token === 'GDN' ? GDNTokenABI : USDCABI
 
   const result = useReadContract({
     address: tokenAddress,
@@ -26,8 +26,8 @@ export function useToken(token: 'GDN' | 'USDC') {
   const { address } = useAccount()
   const { writeContract, isPending: isWritePending } = useWriteContract()
 
-  const tokenAddress = (token === 'GDN' ? CONTRACTS.GDNToken : CONTRACTS.MockUSDC) as Address
-  const abi = token === 'GDN' ? GDNTokenABI : MockUSDCABI
+  const tokenAddress = (token === 'GDN' ? CONTRACTS.GDNToken : CONTRACTS.USDC) as Address
+  const abi = token === 'GDN' ? GDNTokenABI : USDCABI
   const decimals = token === 'GDN' ? 18 : 6
 
   const balance = useReadContract({

@@ -2,7 +2,7 @@
 
 import { ReactNode, useState } from 'react'
 import { WagmiProvider } from 'wagmi'
-import { sepolia } from 'wagmi/chains'
+import { mainnet } from 'wagmi/chains'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RainbowKitProvider, getDefaultConfig, darkTheme } from '@rainbow-me/rainbowkit'
 import '@rainbow-me/rainbowkit/styles.css'
@@ -10,7 +10,7 @@ import '@rainbow-me/rainbowkit/styles.css'
 const config = getDefaultConfig({
   appName: 'Gordon.fi',
   projectId: '04b6b227e5604e2e8437607e3a30f524',
-  chains: [sepolia],
+  chains: [mainnet],
   ssr: true,
 })
 

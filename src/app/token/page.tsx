@@ -320,7 +320,7 @@ export default function TokenPage() {
                   </div>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 pl-4 md:pl-0">
                     <span className="text-[#6B6B6B] text-xs">src: {entry.source}</span>
-                    <a href={`https://sepolia.etherscan.io/tx/${entry.tx}`} target="_blank" rel="noreferrer" className="text-xs text-[#6B6B6B] hover:text-[#00FF66] flex items-center gap-1">
+                    <a href={`https://etherscan.io/tx/${entry.tx}`} target="_blank" rel="noreferrer" className="text-xs text-[#6B6B6B] hover:text-[#00FF66] flex items-center gap-1">
                       tx: {entry.tx} <ExternalLink className="w-3 h-3" />
                     </a>
                   </div>
