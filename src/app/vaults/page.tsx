@@ -6,7 +6,6 @@ import ConnectButton from '@/components/ConnectButton';
 import Navbar from '@/components/Navbar';
 import MobileNav from '@/components/MobileNav';
 import { useAccount } from 'wagmi';
-import { useVault } from '@/hooks/useVault';
 import { usePublicVaults } from '@/hooks/usePublicData';
 import { CONTRACTS } from '@/config/contracts';
 import {

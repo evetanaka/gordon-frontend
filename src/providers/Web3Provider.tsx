@@ -3,6 +3,7 @@
 import { ReactNode, useState } from 'react'
 import { WagmiProvider } from 'wagmi'
 import { mainnet } from 'wagmi/chains'
+import { http } from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RainbowKitProvider, getDefaultConfig, darkTheme } from '@rainbow-me/rainbowkit'
 import '@rainbow-me/rainbowkit/styles.css'
@@ -12,6 +13,9 @@ const config = getDefaultConfig({
   projectId: '04b6b227e5604e2e8437607e3a30f524',
   chains: [mainnet],
   ssr: true,
+  transports: {
+    [mainnet.id]: http('https://eth.llamarpc.com'),
+  },
 })
 
 const gordonTheme = darkTheme({
