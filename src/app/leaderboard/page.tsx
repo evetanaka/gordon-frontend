@@ -9,6 +9,7 @@ import {
   ChevronDown, ChevronUp, ExternalLink, Copy, Power, Activity, ArrowUpRight, ArrowRight,
   LayoutDashboard, Layers, Trophy, Coins, Search, X, Star, Check, TrendingUp, Zap
 } from 'lucide-react';
+import { useLeaderboard } from '@/hooks/usePublicData';
 
 // --- HOOKS ---
 const useScrollReveal = (opts: { threshold?: number; delay?: number } = {}) => {
@@ -40,43 +41,8 @@ const useOnClickOutside = (ref: React.RefObject<any>, handler: (e: any) => void)
   }, [ref, handler]);
 };
 
-// --- MOCK DATA ---
+// --- DATA ---
 const genSparkline = (base: number, trend: number) => Array.from({ length: 30 }, (_, i) => Math.max(0, Math.min(100, base + trend * (i / 30) + (Math.random() - 0.5) * 12)));
-
-const WALLETS = (() => {
-  const top: any[] = [
-    { address: '0x71C7a3d849A2', short: '0x71C...49A2', winRate: 84.2, pnl: 142500, roi: 412, volume: 2100000, openPos: 3, trackedDays: 47, vault: 'Alpha Vault', vaultId: 'alpha', vaultRank: 1, signalShare: 32, isRising: false, risingDelta: 0, sparkline: genSparkline(70, 15) },
-    { address: '0x4B27e5a111F8', short: '0x4B2...11F8', winRate: 79.1, pnl: 98200, roi: 287, volume: 1600000, openPos: 1, trackedDays: 35, vault: 'Alpha Vault', vaultId: 'alpha', vaultRank: 2, signalShare: 24, isRising: false, risingDelta: 0, sparkline: genSparkline(65, 14) },
-    { address: '0x99A3b2c4CC42', short: '0x99A...CC42', winRate: 77.8, pnl: 76400, roi: 198, volume: 980000, openPos: 5, trackedDays: 28, vault: 'Alpha Vault', vaultId: 'alpha', vaultRank: 3, signalShare: 18, isRising: false, risingDelta: 0, sparkline: genSparkline(62, 16) },
-    { address: '0xA1F9c3e288D3', short: '0xA1F...88D3', winRate: 72.4, pnl: 68100, roi: 412, volume: 8400000, openPos: 4, trackedDays: 62, vault: 'Degen Vault', vaultId: 'degen', vaultRank: 1, signalShare: 38, isRising: false, risingDelta: 0, sparkline: genSparkline(58, 15) },
-    { address: '0xB3C2d1e422E1', short: '0xB3C...22E1', winRate: 69.8, pnl: 52800, roi: 287, volume: 5100000, openPos: 2, trackedDays: 45, vault: 'Degen Vault', vaultId: 'degen', vaultRank: 2, signalShare: 28, isRising: false, risingDelta: 0, sparkline: genSparkline(55, 14) },
-  ];
-  // Generate 45 more
-  const names = ['D4E7', 'F829', '3A01', 'E5C4', '7B92', '1D3F', '8A6E', 'C891', '2F7D', '6E4A', '9C3B', 'A2D1', 'B8F3', '4E7C', '5A9D', '7C2E', 'D3F8', 'E6A1', '1B4C', '3D9E', '8F2A', 'C4D7', '2A8F', '6B3E', '9D1C', 'A7F2', 'B1E8', '4C6D', '5E9A', '7A3F', 'D8C1', 'E2B4', '1F7A', '3C8D', '8D5E', 'C2A9', '2E4B', '6A7F', '9B2D', 'A4C8', 'B6D3', '4A1E', '5C4F', '7E8A', '0F3D'];
-  for (let i = 0; i < 45; i++) {
-    const rank = i + 6;
-    const isRising = rank >= 41;
-    const wr = Math.max(50, 75 - (i * 0.5) + (Math.random() - 0.5) * 5);
-    top.push({
-      address: `0x${names[i]}...${names[(i + 7) % names.length]}`,
-      short: `0x${names[i]}...${names[(i + 7) % names.length]}`,
-      winRate: parseFloat(wr.toFixed(1)),
-      pnl: Math.round(45000 - i * 800 + (Math.random() - 0.3) * 5000),
-      roi: Math.round(180 - i * 3 + (Math.random() - 0.3) * 20),
-      volume: Math.round((800000 - i * 14000 + Math.random() * 50000)),
-      openPos: Math.floor(Math.random() * 6),
-      trackedDays: Math.round(60 - i * 0.8 + Math.random() * 10),
-      vault: rank <= 50 ? 'Alpha Vault' : null,
-      vaultId: rank <= 50 ? 'alpha' : null,
-      vaultRank: rank <= 50 ? rank : null,
-      signalShare: rank <= 10 ? Math.round(12 - (rank - 6) * 1.5) : null,
-      isRising,
-      risingDelta: isRising ? Math.round(10 + Math.random() * 8) : 0,
-      sparkline: genSparkline(isRising ? 45 : 55, isRising ? 18 : 8),
-    });
-  }
-  return top.map((w, i) => ({ ...w, rank: i + 1 }));
-})();
 
 // --- SPARKLINE ---
 const Sparkline = ({ data, width = 60, height = 20 }: { data: number[]; width?: number; height?: number }) => {
@@ -109,6 +75,26 @@ type SortDir = 'asc' | 'desc';
 type Tab = 'all' | 'top50' | 'whales' | 'rising' | 'watchlist';
 
 export default function LeaderboardPage() {
+  const { data: apiWallets, isLoading: apiLoading } = useLeaderboard('score', 100);
+  const WALLETS = apiWallets.map((w, i) => ({
+    address: w.address,
+    short: `${w.address.slice(0, 6)}...${w.address.slice(-4)}`,
+    winRate: w.winRate,
+    pnl: w.pnl,
+    roi: w.roi,
+    volume: w.volume,
+    openPos: 0,
+    trackedDays: 0,
+    vault: w.vaults[0] || null,
+    vaultId: w.vaults[0] || null,
+    vaultRank: i + 1,
+    signalShare: null,
+    isRising: false,
+    risingDelta: 0,
+    sparkline: genSparkline(50 + w.winRate * 0.3, w.roi > 0 ? 10 : -5),
+    rank: w.rank,
+    score: w.score,
+  }));
   const [isConnected, setIsConnected] = useState(true);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('all');

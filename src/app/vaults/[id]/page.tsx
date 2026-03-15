@@ -15,44 +15,7 @@ import { useVault, useConvertToAssets } from '@/hooks/useVault';
 import { useToken } from '@/hooks/useToken';
 import { useAccount } from 'wagmi';
 import { type Address, formatUnits } from 'viem';
-import { CONTRACTS } from '@/config/contracts';
-
-// --- VAULT ID → ADDRESS MAPPING ---
-
-const VAULT_MAP: Record<string, { address: Address; name: string; subtitle: string; tags: string[]; riskLevel: number; shareSymbol: string }> = {
-  crypto: {
-    address: CONTRACTS.CryptoVault as Address,
-    name: 'Crypto Vault',
-    subtitle: 'Top Crypto Traders · Diversified',
-    tags: ['CRYPTO', 'DIVERSIFIED', 'AUTO-COMPOUND'],
-    riskLevel: 3,
-    shareSymbol: 'gCRYPTO',
-  },
-  sport: {
-    address: CONTRACTS.SportVault as Address,
-    name: 'Sport Vault',
-    subtitle: 'Sports Prediction Markets',
-    tags: ['SPORTS', 'PREDICTION', 'MEDIUM RISK'],
-    riskLevel: 2,
-    shareSymbol: 'gSPORT',
-  },
-  finance: {
-    address: CONTRACTS.FinanceVault as Address,
-    name: 'Finance Vault',
-    subtitle: 'Financial Markets · Macro',
-    tags: ['FINANCE', 'MACRO', 'LOW RISK'],
-    riskLevel: 2,
-    shareSymbol: 'gFIN',
-  },
-  politic: {
-    address: CONTRACTS.PoliticVault as Address,
-    name: 'Politic Vault',
-    subtitle: 'Political Prediction Markets',
-    tags: ['POLITICS', 'HIGH CONVICTION', 'VOLATILE'],
-    riskLevel: 4,
-    shareSymbol: 'gPOL',
-  },
-};
+import { usePublicVault } from '@/hooks/usePublicData';
 
 // --- HOOKS ---
 
@@ -288,9 +251,18 @@ const genChartData = (base: number, volatility: number, trend: number, days: num
 // --- MAIN ---
 
 export default function VaultDetailPage({ params }: { params: { id: string } }) {
-  const vaultConfig = VAULT_MAP[params.id];
+  const { data: vaultApiData, isLoading: apiLoading } = usePublicVault(params.id);
   const { address, isConnected } = useAccount();
 
+  // Build config from API data
+  const vaultConfig = vaultApiData ? {
+    address: (vaultApiData.ethAddress || '0x0000000000000000000000000000000000000000') as Address,
+    name: vaultApiData.name,
+    subtitle: vaultApiData.description || vaultApiData.categories?.join(' · ') || '',
+    tags: (vaultApiData.categories || []).map((c: string) => c.toUpperCase()),
+    riskLevel: 2,
+    shareSymbol: `g${params.id.toUpperCase().slice(0, 6)}`,
+  } : null;
   const vaultAddress = vaultConfig?.address || ('0x0000000000000000000000000000000000000000' as Address);
   const vault = useVault(vaultAddress);
   const { balance: usdcBalance } = useToken('USDC');
@@ -312,6 +284,14 @@ export default function VaultDetailPage({ params }: { params: { id: string } }) 
   const days = chartPeriod === '7D' ? 7 : chartPeriod === '30D' ? 30 : chartPeriod === '90D' ? 90 : 180;
   const vaultChart = genChartData(10000, 400, 80, days);
   const benchChart = genChartData(10000, 200, 30, days);
+
+  if (apiLoading) {
+    return (
+      <div className="min-h-screen bg-[#0A0A0A] text-white flex items-center justify-center">
+        <div className="font-mono text-[#6B6B6B] text-xs uppercase tracking-widest animate-pulse">&gt; LOADING VAULT...</div>
+      </div>
+    );
+  }
 
   if (!vaultConfig) {
     return (

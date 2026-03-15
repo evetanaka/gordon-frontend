@@ -7,6 +7,7 @@ import Navbar from '@/components/Navbar';
 import MobileNav from '@/components/MobileNav';
 import { useAccount } from 'wagmi';
 import { useVault } from '@/hooks/useVault';
+import { usePublicVaults } from '@/hooks/usePublicData';
 import { CONTRACTS } from '@/config/contracts';
 import {
   ChevronDown, ExternalLink, Copy, Power, Activity, ArrowUpRight, ArrowRight,
@@ -88,7 +89,7 @@ const Toast = ({ message, visible }: { message: string; visible: boolean }) => {
   );
 };
 
-// --- VAULT DATA ---
+// --- VAULT DATA (from API) ---
 
 interface VaultConfig {
   id: string;
@@ -103,61 +104,6 @@ interface VaultConfig {
   tags: string[];
   address: `0x${string}`;
 }
-
-const VAULT_CONFIGS: VaultConfig[] = [
-  {
-    id: 'crypto',
-    name: 'Crypto Vault',
-    subtitle: 'Top Crypto Traders · Diversified',
-    status: 'live',
-    mockApy: 47.2,
-    riskLevel: 2,
-    riskLabel: 'Medium',
-    tracked: 50,
-    strategy: 'Copies the top crypto prediction market traders. Diversified across BTC, ETH, and altcoin markets.',
-    tags: ['CRYPTO', 'AUTO-COMPOUND', 'DIVERSIFIED'],
-    address: CONTRACTS.CryptoVault as `0x${string}`,
-  },
-  {
-    id: 'sport',
-    name: 'Sport Vault',
-    subtitle: 'Sports Markets · High Volume',
-    status: 'live',
-    mockApy: 89.1,
-    riskLevel: 3,
-    riskLabel: 'Medium-High',
-    tracked: 30,
-    strategy: 'Mirrors the top sports prediction market traders. High-frequency bets across major leagues.',
-    tags: ['SPORTS', 'HIGH VOLUME', 'MOMENTUM'],
-    address: CONTRACTS.SportVault as `0x${string}`,
-  },
-  {
-    id: 'finance',
-    name: 'Finance Vault',
-    subtitle: 'Macro & Finance · Institutional',
-    status: 'live',
-    mockApy: 35.5,
-    riskLevel: 1,
-    riskLabel: 'Low',
-    tracked: 100,
-    strategy: 'Tracks institutional-grade wallets on macro and finance prediction markets. Conservative approach.',
-    tags: ['MACRO', 'LOW RISK', 'INSTITUTIONAL'],
-    address: CONTRACTS.FinanceVault as `0x${string}`,
-  },
-  {
-    id: 'politic',
-    name: 'Politic Vault',
-    subtitle: 'Political Markets · High Conviction',
-    status: 'live',
-    mockApy: 63.8,
-    riskLevel: 4,
-    riskLabel: 'High',
-    tracked: 10,
-    strategy: 'Concentrated bets on political prediction markets. High conviction, higher risk/reward.',
-    tags: ['POLITICS', 'HIGH RISK', 'CONCENTRATED'],
-    address: CONTRACTS.PoliticVault as `0x${string}`,
-  },
-];
 
 // --- VAULT CARD ---
 
@@ -310,35 +256,34 @@ export default function VaultsPage() {
     setTimeout(() => setToastVisible(false), 3000);
   }, []);
 
-  // On-chain vault data
-  const cryptoVault = useVault(CONTRACTS.CryptoVault as `0x${string}`);
-  const sportVault = useVault(CONTRACTS.SportVault as `0x${string}`);
-  const financeVault = useVault(CONTRACTS.FinanceVault as `0x${string}`);
-  const politicVault = useVault(CONTRACTS.PoliticVault as `0x${string}`);
+  // Fetch vaults from API
+  const { data: apiVaults, isLoading: apiLoading } = usePublicVaults();
 
-  const vaultHooks: Record<string, ReturnType<typeof useVault>> = {
-    crypto: cryptoVault,
-    sport: sportVault,
-    finance: financeVault,
-    politic: politicVault,
-  };
-
-  // Build enriched vault list
-  const vaultsWithData = VAULT_CONFIGS.map(config => {
-    const hook = vaultHooks[config.id];
-    const tvlRaw = hook?.totalAssets;
-    const tvlNum = tvlRaw !== undefined ? Number(tvlRaw) / 1e6 : null; // USDC has 6 decimals
-    return {
-      ...config,
-      tvl: tvlNum,
-      isLoading: hook?.isLoading ?? false,
-      userShares: hook?.userPosition ? hook.userPosition[0] : undefined,
-    };
-  });
+  // Build enriched vault list from API data
+  const vaultsWithData = apiVaults.map(v => ({
+    id: v.slug,
+    name: v.name,
+    subtitle: v.description || v.categories.join(' · ') || v.category,
+    status: 'live' as const,
+    mockApy: 0, // Will be calculated from real PnL later
+    riskLevel: 2,
+    riskLabel: 'Medium',
+    tracked: typeof v.trackedWallets === 'number' ? v.trackedWallets : 0,
+    strategy: v.description || `Copy-trades the top ${v.category} prediction market wallets.`,
+    tags: v.categories.map((c: string) => c.toUpperCase()),
+    address: (v.ethAddress || '0x0000000000000000000000000000000000000000') as `0x${string}`,
+    tvl: null as number | null,
+    isLoading: false,
+    userShares: undefined as bigint | undefined,
+    chain: v.chain,
+    openPositions: v.openPositions,
+    closedTrades: v.closedTrades,
+    totalPnl: v.totalPnl,
+  }));
 
   // Compute total TVL for banner
-  const totalTvl = vaultsWithData.reduce((sum, v) => sum + (v.tvl ?? 0), 0);
-  const anyLoading = vaultsWithData.some(v => v.isLoading);
+  const totalTvl = 0; // Will come from on-chain reads later
+  const anyLoading = apiLoading;
 
   const [tvlRef, tvl] = useCountUp(3.29, 2000, 0, 2, '$', 'M');
   const [vaultsRef, activeVaults] = useCountUp(4, 1500, 0, 0);
