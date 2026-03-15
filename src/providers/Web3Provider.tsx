@@ -14,7 +14,7 @@ const config = getDefaultConfig({
   chains: [mainnet],
   ssr: true,
   transports: {
-    [mainnet.id]: http('https://eth.llamarpc.com'),
+    [mainnet.id]: http('https://mainnet.infura.io/v3/26751baaf62c4f02965ea337f522c615'),
   },
 })
 
