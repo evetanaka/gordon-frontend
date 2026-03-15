@@ -278,7 +278,9 @@ export default function StakePage() {
 
   // Count-up stats
   const [tvlRef, tvlVal] = useCountUp(totalStaked, 2000, 0, 2, '', ' GDN');
-  const [stakersRef, stakersVal] = useCountUp(1847, 1800, 0, 0); // mock — needs indexer
+  // Stakers count not available on-chain — show "—"
+  const stakersRef = useRef<HTMLDivElement>(null);
+  const stakersVal = '—';
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white">

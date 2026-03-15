@@ -36,29 +36,7 @@ const useScrollReveal = (options: { threshold?: number; delay?: number } = { thr
   return [ref, isVisible] as const;
 };
 
-const useCountUp = (end: number, duration = 2000, start = 0, decimals = 0, prefix = '', suffix = '') => {
-  const [count, setCount] = useState(start);
-  const [ref, isVisible] = useScrollReveal({ threshold: 0.5 });
-
-  useEffect(() => {
-    if (!isVisible) return;
-    let startTime: number | null = null;
-    const animate = (timestamp: number) => {
-      if (!startTime) startTime = timestamp;
-      const progress = timestamp - startTime;
-      const percentage = Math.min(progress / duration, 1);
-      const easeOut = 1 - Math.pow(1 - percentage, 5);
-      const currentCount = start + (end - start) * easeOut;
-      setCount(currentCount);
-      if (percentage < 1) requestAnimationFrame(animate);
-      else setCount(end);
-    };
-    requestAnimationFrame(animate);
-  }, [isVisible, end, duration, start]);
-
-  const formatted = count.toFixed(decimals).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  return [ref, `${prefix}${formatted}${suffix}`] as const;
-};
+// useCountUp removed — no fake animated stats
 
 const useOnClickOutside = (ref: React.RefObject<any>, handler: (e: any) => void) => {
   useEffect(() => {
@@ -161,7 +139,7 @@ const VaultCardItem = ({ vault, index, isConnected, showToast }: {
           </div>
           {!isSoon && (
             <div className="text-right">
-              <div className="font-sans font-bold text-2xl text-[#00FF66]">{vault.mockApy}%</div>
+              <div className="font-sans font-bold text-2xl text-[#6B6B6B]">—</div>
               <div className="font-mono text-[10px] text-[#6B6B6B] uppercase tracking-widest">APY</div>
             </div>
           )}
@@ -194,7 +172,7 @@ const VaultCardItem = ({ vault, index, isConnected, showToast }: {
         </div>
         <div>
           <div className="font-mono text-[9px] text-[#6B6B6B] uppercase tracking-widest mb-1">TRACKED</div>
-          <div className="font-mono text-sm text-white">{vault.tracked} wallets</div>
+          <div className="font-mono text-sm text-white">{vault.tracked > 0 ? `${vault.tracked} wallets` : '—'}</div>
         </div>
         <div>
           <div className="font-mono text-[9px] text-[#6B6B6B] uppercase tracking-widest mb-1">RISK</div>
@@ -285,9 +263,10 @@ export default function VaultsPage() {
   const totalTvl = 0; // Will come from on-chain reads later
   const anyLoading = apiLoading;
 
-  const [tvlRef, tvl] = useCountUp(3.29, 2000, 0, 2, '$', 'M');
-  const [vaultsRef, activeVaults] = useCountUp(4, 1500, 0, 0);
-  const [apyRef, avgApy] = useCountUp(58.9, 2000, 0, 1, '', '%');
+  // No fake countUp — show real or placeholder
+  const tvlRef = useRef<HTMLSpanElement>(null);
+  const vaultsRef = useRef<HTMLSpanElement>(null);
+  const apyRef = useRef<HTMLSpanElement>(null);
 
   // Filtering & Sorting
   let filteredVaults = vaultsWithData;
@@ -342,16 +321,16 @@ export default function VaultsPage() {
             <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-3">
               <span className="text-[#6B6B6B] font-mono text-[10px] uppercase tracking-widest">Total TVL:</span>
               <span ref={tvlRef} className="font-sans font-bold text-white text-lg md:text-base">
-                {anyLoading ? tvl : totalTvl >= 1000000 ? `$${(totalTvl / 1000000).toFixed(2)}M` : `$${totalTvl.toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
+                {anyLoading ? '...' : totalTvl >= 1000000 ? `$${(totalTvl / 1000000).toFixed(2)}M` : totalTvl > 0 ? `$${totalTvl.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '$0'}
               </span>
             </div>
             <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-3">
               <span className="text-[#6B6B6B] font-mono text-[10px] uppercase tracking-widest">Active Vaults:</span>
-              <span ref={vaultsRef} className="font-sans font-bold text-white text-lg md:text-base">{activeVaults}</span>
+              <span ref={vaultsRef} className="font-sans font-bold text-white text-lg md:text-base">{vaultsWithData.length}</span>
             </div>
             <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-3">
               <span className="text-[#6B6B6B] font-mono text-[10px] uppercase tracking-widest">Avg APY:</span>
-              <span ref={apyRef} className="font-sans font-bold text-[#00FF66] text-lg md:text-base">{avgApy}</span>
+              <span ref={apyRef} className="font-sans font-bold text-[#6B6B6B] text-lg md:text-base">—</span>
             </div>
           </div>
         </div>

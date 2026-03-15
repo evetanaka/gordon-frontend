@@ -9,6 +9,7 @@ import { useToken } from '@/hooks/useToken';
 import { usePriceFeed } from '@/hooks/usePriceFeed';
 import { useTreasury } from '@/hooks/useTreasury';
 import { useStaking } from '@/hooks/useStaking';
+import { CONTRACTS } from '@/config/contracts';
 import {
   ChevronDown, ExternalLink, Copy, Power, ArrowRight,
   LayoutDashboard, Layers, Coins, Check, TrendingUp,
@@ -219,7 +220,7 @@ export default function TokenPage() {
   // On-chain data
   const { totalSupply: gdnTotalSupply, isLoading: tokenLoading } = useToken('GDN');
   const { price: rawPrice, isLoading: priceLoading } = usePriceFeed();
-  const { totalGdnBurned, totalBuybacks, isLoading: treasuryLoading } = useTreasury();
+  const { treasuryUsdcBalance, totalGdnBurned, totalBuybacks, isLoading: treasuryLoading } = useTreasury();
   const { totalEffectiveStaked, isLoading: stakingLoading } = useStaking();
 
   // Derived values
@@ -306,7 +307,7 @@ export default function TokenPage() {
               <div>Total GDN Burned: <span className="text-white">{totalBurnedFromTreasury > 0 ? `${formatNumber(totalBurnedFromTreasury, 2)} GDN` : '0 GDN'}</span></div>
               <div>Total Buybacks: <span className="text-white">{totalBuybacksNum > 0 ? `$${formatNumber(totalBuybacksNum, 2)} USDC` : '$0 USDC'}</span></div>
             </div>
-            <div className="text-[#00FF66] mb-4">gordon@fi:~$ tail -f buyback.log</div>
+            <div className="text-[#00FF66] mb-4">gordon@fi:~$ tail -f buyback.log <span className="text-[#6B6B6B] italic">(sample data — real burns not indexed yet)</span></div>
             <div className="space-y-4">
               {BURN_LOG.map((entry, i) => (
                 <div key={i} className="border-b border-[#111] pb-3" style={{ animation: `slideInLeft 0.3s ease-out ${i * 50}ms both` }}>
@@ -422,15 +423,15 @@ export default function TokenPage() {
               <div className="flex-1">
                 <div className="font-mono text-[10px] uppercase tracking-widest text-[#6B6B6B] mb-1">CONTRACT</div>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-sm text-white">0x89BB...5B1</span>
-                  <button onClick={() => copyToClipboard('0x89BB90aa215B09F740A4E346465a6ab0E78215B1')} className="text-[#6B6B6B] hover:text-[#00FF66] transition-colors"><Copy className="w-3 h-3" /></button>
+                  <span className="font-mono text-sm text-white">{CONTRACTS.GDNToken.slice(0, 6)}...{CONTRACTS.GDNToken.slice(-4)}</span>
+                  <button onClick={() => copyToClipboard(CONTRACTS.GDNToken)} className="text-[#6B6B6B] hover:text-[#00FF66] transition-colors"><Copy className="w-3 h-3" /></button>
                 </div>
               </div>
               <div>
                 <div className="font-mono text-[10px] uppercase tracking-widest text-[#6B6B6B] mb-1">NETWORK</div>
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-blue-500 rounded-full" />
-                  <span className="font-mono text-sm text-white">Sepolia</span>
+                  <span className="font-mono text-sm text-white">Ethereum</span>
                 </div>
               </div>
               <div>

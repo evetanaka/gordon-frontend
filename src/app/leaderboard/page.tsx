@@ -129,10 +129,21 @@ export default function LeaderboardPage() {
     else { setSortKey(key); setSortDir('desc'); }
   };
 
-  const [trackedRef, tracked] = useCountUp(4209, 2000, 0, 0);
-  const [avgWrRef, avgWr] = useCountUp(64.2, 2000, 0, 1, '', '%');
-  const [topRoiRef, topRoi] = useCountUp(412, 2000, 0, 0, '+', '%');
-  const [totalVolRef, totalVol] = useCountUp(142, 2000, 0, 0, '$', 'M');
+  // Compute real stats from API data
+  const trackedCount = WALLETS.length;
+  const avgWinRate = WALLETS.length > 0 ? (WALLETS.reduce((s, w) => s + w.winRate, 0) / WALLETS.length) : 0;
+  const topRoiVal = WALLETS.length > 0 ? Math.max(...WALLETS.map(w => w.roi)) : 0;
+  const totalVolVal = WALLETS.reduce((s, w) => s + w.volume, 0);
+
+  const trackedRef = useRef<HTMLDivElement>(null);
+  const avgWrRef = useRef<HTMLDivElement>(null);
+  const topRoiRef = useRef<HTMLDivElement>(null);
+  const totalVolRef = useRef<HTMLDivElement>(null);
+
+  const tracked = trackedCount.toLocaleString();
+  const avgWr = `${avgWinRate.toFixed(1)}%`;
+  const topRoi = `+${topRoiVal.toFixed(0)}%`;
+  const totalVol = totalVolVal >= 1000000 ? `$${(totalVolVal / 1000000).toFixed(1)}M` : `$${(totalVolVal / 1000).toFixed(0)}K`;
 
   const filtered = useMemo(() => {
     let list = [...WALLETS];
@@ -205,7 +216,7 @@ export default function LeaderboardPage() {
           </div>
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-[#00FF66] animate-pulse" />
-            <span className="font-mono text-xs text-[#6B6B6B]">4,209 wallets tracked · Updated 12s ago</span>
+            <span className="font-mono text-xs text-[#6B6B6B]">{apiLoading ? 'Loading...' : `${trackedCount} wallets tracked`}</span>
           </div>
         </div>
 
@@ -344,7 +355,7 @@ export default function LeaderboardPage() {
 
             {/* Pagination */}
             <div className="text-center mt-6 space-y-2">
-              <div className="font-mono text-[10px] text-[#6B6B6B]">Showing {Math.min(visibleCount, filtered.length)} of {activeTab === 'all' ? '4,209' : filtered.length} wallets</div>
+              <div className="font-mono text-[10px] text-[#6B6B6B]">Showing {Math.min(visibleCount, filtered.length)} of {filtered.length} wallets</div>
               {visibleCount < filtered.length && (
                 <button onClick={() => setVisibleCount(c => c + 50)} className="font-mono text-xs text-[#6B6B6B] hover:text-[#00FF66] uppercase tracking-widest transition-colors">
                   [Load More]
